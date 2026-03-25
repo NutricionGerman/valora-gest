@@ -1,0 +1,21 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary-dark: #1c1d21;
+  --color-accent-orange: #e87a3d;
+  --color-accent-teal: #4c9a9b;
+  --color-accent-yellow: #f59e0b;
+  --color-accent-green: #48bb78;
+  
+  --color-glass-bg: rgba(28, 29, 33, 0.6);
+  --color-glass-border: rgba(255, 255, 255, 0.1);
+  --color-glass-bg-darker: rgba(0, 0, 0, 0.25);
+}
+
+@layer base {
+  body {
+    background-color: var(--color-primary-dark);
+    color: #f0f0f0;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+}
