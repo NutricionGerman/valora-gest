@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Asistencia - Valora-Gest</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-hover: #4f46e5;
+            --bg-dark: #0f172a;
+            --card-bg: rgba(30, 41, 59, 0.7);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --input-bg: rgba(15, 23, 42, 0.6);
+            --input-border: #334155;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: radial-gradient(circle at top right, #1e1b4b, #0f172a);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 480px;
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 28px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .logo { text-align: center; margin-bottom: 28px; }
+        .logo span {
+            font-weight: 600;
+            font-size: 26px;
+            background: linear-gradient(to right, #818cf8, #c084fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        h1 { font-size: 22px; text-align: center; margin-bottom: 8px; }
+        p.subtitle { text-align: center; font-size: 14px; color: var(--text-muted); margin-bottom: 36px; }
+
+        .form-group { margin-bottom: 24px; }
+        label { display: block; font-size: 14px; margin-bottom: 10px; color: var(--text-muted); }
+
+        input, textarea {
+            width: 100%;
+            padding: 18px;
+            border: 1px solid var(--input-border);
+            border-radius: 14px;
+            color: white;
+            background: var(--input-bg);
+            font-size: 15px;
+            transition: all 0.3s ease;
+        }
+
+        input { height: 54px; }
+        textarea { min-height: 130px; resize: none; }
+
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.2);
+        }
+
+        button {
+            width: 100%;
+            height: 54px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 14px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        button:hover { background: var(--primary-hover); transform: translateY(-2px); }
+
+        .success-message { display: none; text-align: center; }
+        .success-icon {
+            width: 72px; height: 72px; background: rgba(34, 197, 94, 0.2); color: #4ade80;
+            border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container" id="formContainer">
+    <div class="logo"><span>Valora-Gest</span></div>
+    <h1>Registro de Asistencia</h1>
+    <p class="subtitle">Confirma tu presencia hoy</p>
+    
+    <form id="attendanceForm">
+        <div class="form-group">
+            <label for="nombre">Nombre y Apellido</label>
+            <input type="text" id="nombre" name="nombre" placeholder="Tu nombre completo" required>
+        </div>
+
+        <div class="form-group">
+            <label for="aprendizaje">¿Qué aprendiste hoy?</label>
+            <textarea id="aprendizaje" name="aprendizaje" placeholder="Comparte brevemente..." required></textarea>
+        </div>
+
+        <button type="submit" id="submitBtn">Enviar Registro</button>
+    </form>
+</div>
+
+<div class="container success-message" id="successContainer">
+    <div class="success-icon">
+        <svg fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24" width="32" height="32">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path>
+        </svg>
+    </div>
+    <h2>¡Confirmado!</h2>
+    <p style="margin-top: 12px; color: var(--text-muted);">Tu asistencia fue enviada.</p>
+</div>
+
+<script>
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyNh23LvGeAFq4N_clJE-rO8aCYBf0lP3ayeR4nEXtS2EALnbnuUHfHOi3RAy5eDIA95g/exec";
+
+    document.getElementById('attendanceForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const btn = document.getElementById('submitBtn');
+        btn.disabled = true;
+        btn.textContent = 'Enviando...';
+
+        const data = {
+            SheetName: "Hoja 3",
+            Nombre_Completo: document.getElementById('nombre').value,
+            Aprendizaje_Clase: document.getElementById('aprendizaje').value
+        };
+
+        try {
+            // Mandamos los datos como cuerpo del POST
+            await fetch(SCRIPT_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                body: JSON.stringify(data)
+            });
+
+            document.getElementById('formContainer').style.display = 'none';
+            document.getElementById('successContainer').style.display = 'block';
+
+        } catch (error) {
+            console.error('Error:', error);
+            alert("Intenta de nuevo. Asegúrate de que el script en Google esté activo.");
+            btn.disabled = false;
+            btn.textContent = 'Enviar Registro';
+        }
+    });
+</script>
+
+</body>
+</html>

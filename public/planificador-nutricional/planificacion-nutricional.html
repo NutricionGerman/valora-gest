@@ -366,8 +366,13 @@ select:focus, input:focus, textarea:focus { border-color: var(--accent-orange); 
         <!-- Step 1 -->
         <div class="wizard-step">
             <div class="goal-setting">
-                <div class="section-title-styled">1) Finalidad del Plan Alimentario</div>
+                <div class="section-title-styled">1) Información General y Finalidad</div>
                 <div class="input-group">
+                    <label for="group-number-input">N° de Grupo / Identificación</label>
+                    <input type="text" id="group-number-input" placeholder="Ej: Grupo 5 - Juan Pérez">
+                </div>
+                <div class="input-group">
+                    <label for="plan-purpose-input">Finalidad del Plan Alimentario</label>
                     <textarea id="plan-purpose-input" rows="4" placeholder="Ej: Cubrir los requerimientos nutricionales según el sexo y edad."></textarea>
                 </div>
             </div>
@@ -829,56 +834,122 @@ document.addEventListener('DOMContentLoaded', () => {
         const addTitle = (title) => { const titleHeight = 7; if (startY + titleHeight + 6 > pageHeight - margin) { doc.addPage(); startY = margin; } doc.setFontSize(titleFontSize); doc.setFont(undefined, 'bold'); doc.setFillColor(...titleBgColor); doc.rect(margin - 5, startY - 4, usableWidth + 10, titleHeight, 'F'); doc.setFillColor(...titleAccentColor); doc.rect(margin - 5, startY - 4, 3, titleHeight, 'F'); doc.setTextColor(...titleTextColor); doc.text(title, margin, startY); doc.setFont(undefined, 'normal'); doc.setTextColor(0, 0, 0); startY += titleHeight + 2; };
         const addText = (text, x, y, maxWidth, fontStyle = 'normal', fontSize = textFontSize) => { if (!text || text.trim() === '') text = "N/A"; doc.setFontSize(fontSize); doc.setFont(undefined, fontStyle); const lines = doc.splitTextToSize(text, maxWidth); const textHeight = lines.length * (fontSize * 0.35); if (y + textHeight > pageHeight - margin) { doc.addPage(); y = margin; } doc.text(lines, x, y); return y + textHeight + 2; };
         const addTable = (config) => {
-            let finalY = (doc.autoTable.previous && doc.autoTable.previous.finalY) ? doc.autoTable.previous.finalY : startY;
-            let estimatedHeight = (Array.isArray(config.body) ? config.body.length + 1 : 2) * 7;
-            if (finalY + estimatedHeight > pageHeight - margin) { doc.addPage(); startY = margin; }
-            config.startY = startY;
-            doc.autoTable(config);
-            return (doc.autoTable.previous?.finalY ?? startY) + 10;
+            try {
+                let finalY = (doc.autoTable && doc.autoTable.previous && doc.autoTable.previous.finalY) ? doc.autoTable.previous.finalY : startY;
+                let estimatedHeight = (Array.isArray(config.body) ? config.body.length + 1 : 2) * 7;
+                if (finalY + estimatedHeight > pageHeight - margin) { doc.addPage(); startY = margin; }
+                config.startY = startY;
+                if (typeof doc.autoTable === 'function') {
+                    doc.autoTable(config);
+                    startY = (doc.lastAutoTable?.finalY ?? startY) + 10;
+                } else {
+                    console.error("autoTable plugin not found");
+                    startY += 10;
+                }
+                return startY;
+            } catch (e) {
+                console.error("Error generating table:", e);
+                return startY + 10;
+            }
         };
         
-        doc.setFontSize(10); doc.setTextColor(100); doc.text("Catedra de Nutricion Infantil - UNSTA", doc.internal.pageSize.width - margin, startY, { align: 'right' }); doc.setFontSize(18); doc.setTextColor(44, 62, 80); doc.text("Planificación Nutricional", margin, startY + 5); const groupNum = groupNumberInput.value.trim(); if (groupNum) { doc.setFontSize(10); doc.setTextColor(73, 80, 87); doc.text(`N° DE GRUPO: ${groupNum}`, doc.internal.pageSize.width - margin, startY + 5, { align: 'right' }); } startY += 15; doc.setTextColor(0, 0, 0);
+        try {
+            doc.setFontSize(10); doc.setTextColor(100); doc.text("Cátedra de Nutrición Infantil - UNSTA", doc.internal.pageSize.width - margin, startY, { align: 'right' }); 
+            doc.setFontSize(18); doc.setTextColor(44, 62, 80); doc.text("Planificación Nutricional", margin, startY + 5); 
+            
+            const groupNum = groupNumberInput ? groupNumberInput.value.trim() : ""; 
+            if (groupNum) { 
+                doc.setFontSize(10); doc.setTextColor(73, 80, 87); doc.text(`N° DE GRUPO/ID: ${groupNum}`, doc.internal.pageSize.width - margin, startY + 5, { align: 'right' }); 
+            } 
+            startY += 15; doc.setTextColor(0, 0, 0);
 
-        addTitle("1) Finalidad del Plan Alimentario"); startY = addText(planPurposeInput.value, margin, startY, usableWidth);
-        addTitle("2) Gasto Energético Total (GET)"); startY = addText(`GET: ${tdeeInput.value || 'N/A'} kcal`, margin, startY, usableWidth);
-        addTitle("3) Requerimiento Macronutrientes (AMDR)"); startY = addTable({ html: '.amdr-results-table', theme: 'grid', headStyles: headStyle, styles: { fontSize: tableFontSize }, margin: { left: margin, right: margin } });
-        addTitle("4) Micronutrientes / Límites (Objetivo vs Consumido)"); const microBody = [['Fibra (g)', fibraGoalInput.value, totalFibra.toFixed(1)], ['Vit C (mg)', vitcGoalInput.value, totalVitC.toFixed(1)], ['Hierro (mg)', hierroGoalInput.value, totalHierro.toFixed(1)], ['Calcio (mg)', calcioGoalInput.value, Math.round(totalCalcio)], ['Sodio (mg) (MAX)', sodioLimitInput.value, Math.round(totalSodio)], ['Colest (mg) (MAX)', colesterolLimitInput.value, Math.round(totalColesterol)], ['G.Sat (g) (MAX)', agsLimitInput.value, totalAGS.toFixed(1)]]; startY = addTable({ head: [['Nutriente', 'Objetivo / Límite', 'Consumido']], body: microBody, theme: 'grid', headStyles: headStyle, styles: { fontSize: tableFontSize }, margin: { left: margin, right: margin } });
-        addTitle("5) Caracteres Físicos y Químicos"); const caracBody = [['Distribución', caracteresDistribucionInput.value], ['Temperatura', caracteresTemperaturaInput.value], ['Consistencia', caracteresConsistenciaInput.value], ['Volumen', caracteresVolumenInput.value], ['Fibra', caracteresFibraInput.value], ['Vitaminas y minerales', caracteresVitaminasInput.value], ['Liquido', caracteresLiquidoInput.value]]; startY = addTable({ head: [['Característica', 'Valor']], body: caracBody, theme: 'grid', headStyles: headStyle, columnStyles: { 0: { fontStyle: 'bold'} }, margin: { left: margin, right: margin } });
-        addTitle("6) Interpretación"); startY = addText(interpretacionInput.value, margin, startY, usableWidth);
-        
-        if (startY > pageHeight / 2) { doc.addPage(); startY = margin; }
-        
-        addTitle("7) Formula Desarrollada"); const foodHead = [["Alimento", "g", "Hc", "P", "G", "Fib", "Col", "Sat", "Sod", "VitC", "Fe", "Ca"]]; const foodBody = additionHistory.map(item => [item.nombre, item.cantidad.toFixed(1), item.hco.toFixed(1), item.proteinas.toFixed(1), item.lipidos.toFixed(1), item.fibra.toFixed(1), Math.round(item.colesterol), item.ags.toFixed(1), Math.round(item.sodio), item.vit_c.toFixed(1), item.hierro.toFixed(1), Math.round(item.calcio)]); startY = addTable({ head: foodHead, body: foodBody, theme: 'grid', styles: { fontSize: smallFontSize, cellPadding: 1.2 }, headStyles: headStyle, columnStyles: { 0: { cellWidth: 'auto'} }, margin: { left: margin, right: margin } });
-        addTitle("Resumen Total Diario"); const summaryBody = [['Carbohidratos (g)', totalHco.toFixed(1)], ['Proteínas (g)', totalProteinas.toFixed(1)], ['Lípidos (g)', totalLipidos.toFixed(1)], ['Calorías (kcal)', Math.round(totalCalorias)]]; startY = addTable({ head: [['Nutriente', 'Total Consumido']], body: summaryBody, theme: 'grid', headStyles: { fillColor: summaryHeaderBgColor, textColor: summaryHeaderTextColor }, columnStyles: { 0: { fontStyle: 'bold'} }, margin: { left: margin, right: margin } });
-        addTitle("Adecuación vs. Objetivos"); const adequacyBody = [['Calorías (kcal)', Math.round(targetGET), adequacyCaloriasSpan.textContent], ['Proteínas (g)', targetProteinGrams.toFixed(1), adequacyProteinasSpan.textContent], ['Carbohidratos (g)', targetCarbGrams.toFixed(1), adequacyCarbosSpan.textContent], ['Grasas (g)', targetFatGrams.toFixed(1), adequacyGrasasSpan.textContent]]; startY = addTable({ head: [['Nutriente', 'Objetivo', 'Adecuación (%)']], body: adequacyBody, theme: 'grid', headStyles: { fillColor: [204, 229, 255], textColor: [0, 64, 133] }, columnStyles: { 0: { fontStyle: 'bold'} }, margin: { left: margin, right: margin } });
-        
-        addTitle("8) Plan de Menú");
-        const textBlockWidth = usableWidth * 0.65; const imageBlockX = margin + textBlockWidth + 5; const imageBlockWidth = usableWidth - textBlockWidth - 5; const maxImageHeight = 45;
-        mealTypes.forEach(mealType => {
-            const items = additionHistory.filter(item => item.comida === mealType);
-            const notes = prepTextareaMap[mealType].value.trim();
-            const imageDataUrl = mealImages[mealType];
-            if (items.length > 0 || notes || imageDataUrl) {
-                if (startY + 30 > pageHeight - margin) { doc.addPage(); startY = margin; }
-                let textBlockY = startY;
-                doc.setFontSize(mealTitleFontSize); doc.setFont(undefined, 'bold'); doc.text(mealType, margin, textBlockY); textBlockY += 7;
-                doc.setFont(undefined, 'normal'); doc.setFontSize(textFontSize);
-                if (items.length > 0) { items.forEach(item => { textBlockY = addText(`${item.nombre} - ${item.cantidad.toFixed(1)}g`, margin, textBlockY, textBlockWidth, 'normal', 9); }); }
-                if (notes) { textBlockY = addText(`Preparación: ${notes}`, margin, textBlockY, textBlockWidth, 'italic', prepNoteFontSize); }
-                let imageEndY = startY;
-                if (imageDataUrl) {
-                    try {
-                        const imgProps = doc.getImageProperties(imageDataUrl); let imgWidth = imageBlockWidth; let imgHeight = (imgProps.height * imgWidth) / imgProps.width;
-                        if (imgHeight > maxImageHeight) { imgHeight = maxImageHeight; imgWidth = (imgProps.width * imgHeight) / imgProps.height; }
-                        doc.addImage(imageDataUrl, 'JPEG', imageBlockX, startY, imgWidth, imgHeight);
-                        imageEndY = startY + imgHeight;
-                    } catch (e) { console.error("Error al añadir imagen al PDF:", e); }
+            addTitle("1) Finalidad del Plan Alimentario"); 
+            startY = addText(planPurposeInput ? planPurposeInput.value : "N/A", margin, startY, usableWidth);
+            
+            addTitle("2) Gasto Energético Total (GET)"); 
+            startY = addText(`GET: ${tdeeInput ? tdeeInput.value : 'N/A'} kcal`, margin, startY, usableWidth);
+            
+            addTitle("3) Requerimiento Macronutrientes (AMDR)"); 
+            startY = addTable({ html: '.amdr-results-table', theme: 'grid', headStyles: headStyle, styles: { fontSize: tableFontSize }, margin: { left: margin, right: margin } });
+            
+            addTitle("4) Micronutrientes / Límites (Objetivo vs Consumido)"); 
+            const microBody = [
+                ['Fibra (g)', fibraGoalInput?.value || '0', totalFibra.toFixed(1)], 
+                ['Vit C (mg)', vitcGoalInput?.value || '0', totalVitC.toFixed(1)], 
+                ['Hierro (mg)', hierroGoalInput?.value || '0', totalHierro.toFixed(1)], 
+                ['Calcio (mg)', calcioGoalInput?.value || '0', Math.round(totalCalcio)], 
+                ['Sodio (mg) (MAX)', sodioLimitInput?.value || '0', Math.round(totalSodio)], 
+                ['Colest (mg) (MAX)', colesterolLimitInput?.value || '0', Math.round(totalColesterol)], 
+                ['G.Sat (g) (MAX)', agsLimitInput?.value || '0', totalAGS.toFixed(1)]
+            ]; 
+            startY = addTable({ head: [['Nutriente', 'Objetivo / Límite', 'Consumido']], body: microBody, theme: 'grid', headStyles: headStyle, styles: { fontSize: tableFontSize }, margin: { left: margin, right: margin } });
+            
+            addTitle("5) Caracteres Físicos y Químicos"); 
+            const caracBody = [
+                ['Distribución', caracteresDistribucionInput?.value || "N/A"], 
+                ['Temperatura', caracteresTemperaturaInput?.value || "N/A"], 
+                ['Consistencia', caracteresConsistenciaInput?.value || "N/A"], 
+                ['Volumen', caracteresVolumenInput?.value || "N/A"], 
+                ['Fibra', caracteresFibraInput?.value || "N/A"], 
+                ['Vitaminas y minerales', caracteresVitaminasInput?.value || "N/A"], 
+                ['Líquido', caracteresLiquidoInput?.value || "N/A"]
+            ]; 
+            startY = addTable({ head: [['Característica', 'Valor']], body: caracBody, theme: 'grid', headStyles: headStyle, columnStyles: { 0: { fontStyle: 'bold'} }, margin: { left: margin, right: margin } });
+            
+            addTitle("6) Interpretación"); 
+            startY = addText(interpretacionInput ? interpretacionInput.value : "N/A", margin, startY, usableWidth);
+            
+            if (startY > pageHeight / 2) { doc.addPage(); startY = margin; }
+            
+            addTitle("7) Fórmula Desarrollada"); 
+            const foodHead = [["Alimento", "g", "Hc", "P", "G", "Fib", "Col", "Sat", "Sod", "VitC", "Fe", "Ca"]]; 
+            const foodBody = additionHistory.map(item => [item.nombre, item.cantidad.toFixed(1), item.hco.toFixed(1), item.proteinas.toFixed(1), item.lipidos.toFixed(1), item.fibra.toFixed(1), Math.round(item.colesterol), item.ags.toFixed(1), Math.round(item.sodio), item.vit_c.toFixed(1), item.hierro.toFixed(1), Math.round(item.calcio)]); 
+            startY = addTable({ head: foodHead, body: foodBody, theme: 'grid', styles: { fontSize: smallFontSize, cellPadding: 1.2 }, headStyles: headStyle, columnStyles: { 0: { cellWidth: 'auto'} }, margin: { left: margin, right: margin } });
+            
+            addTitle("Resumen Total Diario"); 
+            const summaryBody = [['Carbohidratos (g)', totalHco.toFixed(1)], ['Proteínas (g)', totalProteinas.toFixed(1)], ['Lípidos (g)', totalLipidos.toFixed(1)], ['Calorías (kcal)', Math.round(totalCalorias)]]; 
+            startY = addTable({ head: [['Nutriente', 'Total Consumido']], body: summaryBody, theme: 'grid', headStyles: { fillColor: summaryHeaderBgColor, textColor: summaryHeaderTextColor }, columnStyles: { 0: { fontStyle: 'bold'} }, margin: { left: margin, right: margin } });
+            
+            addTitle("Adecuación vs. Objetivos"); 
+            const adequacyBody = [
+                ['Calorías (kcal)', Math.round(targetGET), adequacyCaloriasSpan?.textContent || "N/A"], 
+                ['Proteínas (g)', targetProteinGrams.toFixed(1), adequacyProteinasSpan?.textContent || "N/A"], 
+                ['Carbohidratos (g)', targetCarbGrams.toFixed(1), adequacyCarbosSpan?.textContent || "N/A"], 
+                ['Grasas (g)', targetFatGrams.toFixed(1), adequacyGrasasSpan?.textContent || "N/A"]
+            ]; 
+            startY = addTable({ head: [['Nutriente', 'Objetivo', 'Adecuación (%)']], body: adequacyBody, theme: 'grid', headStyles: { fillColor: [204, 229, 255], textColor: [0, 64, 133] }, columnStyles: { 0: { fontStyle: 'bold'} }, margin: { left: margin, right: margin } });
+            
+            addTitle("8) Plan de Menú");
+            const textBlockWidth = usableWidth * 0.65; const imageBlockX = margin + textBlockWidth + 5; const imageBlockWidth = usableWidth - textBlockWidth - 5; const maxImageHeight = 45;
+            mealTypes.forEach(mealType => {
+                const items = additionHistory.filter(item => item.comida === mealType);
+                const notes = prepTextareaMap[mealType] ? prepTextareaMap[mealType].value.trim() : "";
+                const imageDataUrl = mealImages[mealType];
+                if (items.length > 0 || notes || imageDataUrl) {
+                    if (startY + 30 > pageHeight - margin) { doc.addPage(); startY = margin; }
+                    let textBlockY = startY;
+                    doc.setFontSize(mealTitleFontSize); doc.setFont(undefined, 'bold'); doc.text(mealType, margin, textBlockY); textBlockY += 7;
+                    doc.setFont(undefined, 'normal'); doc.setFontSize(textFontSize);
+                    if (items.length > 0) { items.forEach(item => { textBlockY = addText(`${item.nombre} - ${item.cantidad.toFixed(1)}g`, margin, textBlockY, textBlockWidth, 'normal', 9); }); }
+                    if (notes) { textBlockY = addText(`Preparación: ${notes}`, margin, textBlockY, textBlockWidth, 'italic', prepNoteFontSize); }
+                    let imageEndY = startY;
+                    if (imageDataUrl) {
+                        try {
+                            const imgProps = doc.getImageProperties(imageDataUrl); let imgWidth = imageBlockWidth; let imgHeight = (imgProps.height * imgWidth) / imgProps.width;
+                            if (imgHeight > maxImageHeight) { imgHeight = maxImageHeight; imgWidth = (imgProps.width * imgHeight) / imgProps.height; }
+                            doc.addImage(imageDataUrl, 'JPEG', imageBlockX, startY, imgWidth, imgHeight);
+                            imageEndY = startY + imgHeight;
+                        } catch (e) { console.error("Error al añadir imagen al PDF:", e); }
+                    }
+                    startY = Math.max(textBlockY, imageEndY) + 10;
                 }
-                startY = Math.max(textBlockY, imageEndY) + 10;
-            }
-        });
-        
-        doc.save('planificacion_nutricional_completa.pdf');
+            });
+            
+            doc.save('planificacion_nutricional_completa.pdf');
+        } catch (error) {
+            console.error("Critical error generating PDF:", error);
+            alert("Hubo un error al generar el PDF. Por favor, revisa que todos los campos sean válidos.");
+        }
     }
     
     // --- INICIALIZACIÓN ---
