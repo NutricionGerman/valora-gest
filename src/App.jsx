@@ -6,6 +6,8 @@ import ValoracionClinica from './pages/ValoracionClinica';
 import ParametrosBioquimicos from './pages/ParametrosBioquimicos';
 import Antropometria from './pages/Antropometria';
 import HistoriaAlimentaria from './pages/HistoriaAlimentaria';
+import Diagnostico from './pages/Diagnostico';
+import IntervencionNutricional from './pages/IntervencionNutricional';
 import Reportes from './pages/Reportes';
 import Pacientes from './pages/Pacientes';
 
@@ -37,6 +39,8 @@ function App() {
           <Route path="parametros-bioquimicos" element={<ParametrosBioquimicos />} />
           <Route path="antropometria" element={<Antropometria />} />
           <Route path="historia-alimentaria" element={<HistoriaAlimentaria />} />
+          <Route path="diagnostico" element={<Diagnostico />} />
+          <Route path="intervencion-nutricional" element={<IntervencionNutricional />} />
           <Route path="reportes" element={<Reportes />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>

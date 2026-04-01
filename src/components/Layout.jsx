@@ -1,5 +1,5 @@
 import { Outlet, NavLink, Link } from 'react-router-dom';
-import { Home, User, Activity, FileText, PieChart, Stethoscope, Dna, Users } from 'lucide-react';
+import { Home, User, Activity, FileText, PieChart, Stethoscope, Dna, Users, ClipboardList, Salad } from 'lucide-react';
 import clsx from 'clsx';
 
 export default function Layout() {
@@ -10,6 +10,8 @@ export default function Layout() {
     { name: 'Bioquímica', path: '/parametros-bioquimicos', icon: Dna },
     { name: 'Antropometría', path: '/antropometria', icon: Activity },
     { name: 'Historia', path: '/historia-alimentaria', icon: PieChart },
+    { name: 'Diagnóstico', path: '/diagnostico', icon: ClipboardList },
+    { name: 'Intervención N.', path: '/intervencion-nutricional', icon: Salad },
     { name: 'Reportes', path: '/reportes', icon: FileText },
   ];
 

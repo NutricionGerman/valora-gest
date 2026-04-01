@@ -32,6 +32,25 @@ const z0_data = [22.43, 22.45, 22.48, 22.52, 22.59, 22.67, 22.77, 22.9, 23.03, 2
 const z1_data = [26.79, 26.8, 26.83, 26.86, 26.94, 27.02, 27.13, 27.28, 27.43, 27.59, 27.77, 27.97, 28.19, 28.41, 28.64, 28.88, 28.75, 28.98, 29.22, 29.46, 29.7, 29.91, 30.11, 30.3, 30.51, 30.73, 30.95, 31.18, 31.4, 31.59, 31.75, 31.9, 32.03, 32.13, 31.83, 31.94, 32.05];
 const z2_data = [35.26, 35.2, 35.1, 35.07, 35.08, 35.12, 35.18, 35.3, 35.41, 35.55, 35.74, 35.93, 36.14, 36.39, 36.61, 36.89, 35.75, 36.01, 36.28, 36.53, 36.8, 37.03, 37.28, 37.49, 37.72, 37.96, 38.24, 38.49, 38.74, 38.95, 39.12, 39.31, 39.43, 39.53, 38.31, 38.43, 38.54];
 
+// Datos Ganancia de Peso IOM (Semanas 1 a 40)
+const iomWeeksList = Array.from({length: 40}, (_, i) => i + 1);
+const iomBajoPesoLimits = {
+  min: [0.0, 0.0, 0.1, 0.1, 0.1, 0.2, 0.2, 0.3, 0.3, 0.3, 0.4, 0.4, 0.5, 0.9, 1.3, 1.8, 2.2, 2.7, 3.1, 3.6, 4.0, 4.4, 4.9, 5.3, 5.8, 6.2, 6.7, 7.1, 7.6, 8.0, 8.4, 8.9, 9.3, 9.8, 10.2, 10.7, 11.1, 11.6, 12.0, 12.5],
+  max: [0.1, 0.3, 0.4, 0.6, 0.7, 0.9, 1.0, 1.2, 1.3, 1.5, 1.6, 1.8, 2.0, 2.5, 3.1, 3.7, 4.3, 4.9, 5.5, 6.1, 6.7, 7.3, 7.9, 8.5, 9.1, 9.7, 10.2, 10.8, 11.4, 12.0, 12.6, 13.2, 13.8, 14.4, 15.0, 15.6, 16.2, 16.8, 17.4, 18.0]
+};
+const iomNormalLimits = {
+  min: [0.0, 0.0, 0.1, 0.1, 0.1, 0.2, 0.2, 0.3, 0.3, 0.3, 0.4, 0.4, 0.5, 0.9, 1.3, 1.7, 2.1, 2.5, 2.9, 3.3, 3.7, 4.1, 4.5, 4.9, 5.3, 5.7, 6.2, 6.6, 7.0, 7.4, 7.8, 8.2, 8.6, 9.0, 9.4, 9.8, 10.2, 10.6, 11.0, 11.5],
+  max: [0.1, 0.3, 0.4, 0.6, 0.7, 0.9, 1.0, 1.2, 1.3, 1.5, 1.6, 1.8, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.1, 5.6, 6.1, 6.6, 7.1, 7.7, 8.2, 8.7, 9.2, 9.7, 10.2, 10.8, 11.3, 11.8, 12.3, 12.8, 13.4, 13.9, 14.4, 14.9, 15.4, 16.0]
+};
+const iomSobrepesoLimits = {
+  min: [0.0, 0.0, 0.1, 0.1, 0.1, 0.2, 0.2, 0.3, 0.3, 0.3, 0.4, 0.4, 0.5, 0.7, 0.9, 1.2, 1.4, 1.7, 1.9, 2.1, 2.4, 2.6, 2.9, 3.1, 3.3, 3.6, 3.8, 4.1, 4.3, 4.5, 4.8, 5.0, 5.3, 5.5, 5.7, 6.0, 6.2, 6.5, 6.7, 7.0],
+  max: [0.1, 0.3, 0.4, 0.6, 0.7, 0.9, 1.0, 1.2, 1.3, 1.5, 1.6, 1.8, 2.0, 2.3, 2.7, 3.0, 3.4, 3.7, 4.1, 4.4, 4.8, 5.1, 5.5, 5.8, 6.2, 6.5, 6.9, 7.2, 7.6, 7.9, 8.3, 8.6, 9.0, 9.3, 9.7, 10.0, 10.4, 10.7, 11.1, 11.5]
+};
+const iomObesidadLimits = {
+  min: [0.0, 0.0, 0.1, 0.1, 0.1, 0.2, 0.2, 0.3, 0.3, 0.3, 0.4, 0.4, 0.5, 0.6, 0.8, 1.0, 1.1, 1.3, 1.5, 1.6, 1.8, 2.0, 2.1, 2.3, 2.5, 2.6, 2.8, 3.0, 3.1, 3.3, 3.5, 3.6, 3.8, 4.0, 4.1, 4.3, 4.5, 4.6, 4.8, 5.0],
+  max: [0.1, 0.3, 0.4, 0.6, 0.7, 0.9, 1.0, 1.2, 1.3, 1.5, 1.6, 1.8, 2.0, 2.2, 2.5, 2.7, 3.0, 3.2, 3.5, 3.8, 4.0, 4.3, 4.5, 4.8, 5.1, 5.3, 5.6, 5.8, 6.1, 6.4, 6.6, 6.9, 7.1, 7.4, 7.7, 7.9, 8.2, 8.4, 8.7, 9.0]
+};
+
 export default function Antropometria() {
   const [step, setStep] = useState(1);
   const [heightCm, setHeightCm] = useState('');
@@ -141,13 +160,14 @@ export default function Antropometria() {
     }
 
     const bmi = parseFloat(w / (hM * hM)).toFixed(2);
+    const weightGain = parseFloat((w - parseFloat(preWeightKg)).toFixed(2));
     const newHistory = [...history];
     const existingIndex = newHistory.findIndex(p => p.week === gestWeek);
     
     if (existingIndex > -1) {
-      newHistory[existingIndex] = { ...newHistory[existingIndex], weight: w, bmi: parseFloat(bmi) };
+      newHistory[existingIndex] = { ...newHistory[existingIndex], weight: w, bmi: parseFloat(bmi), weightGain };
     } else {
-      newHistory.push({ week: gestWeek, weight: w, bmi: parseFloat(bmi) });
+      newHistory.push({ week: gestWeek, weight: w, bmi: parseFloat(bmi), weightGain });
     }
     
     newHistory.sort((a, b) => a.week - b.week);
@@ -270,6 +290,107 @@ export default function Antropometria() {
   const preGestationalBmi = (step === 2 && heightCm && preWeightKg) 
     ? (parseFloat(preWeightKg) / Math.pow(parseFloat(heightCm) / 100, 2))
     : null;
+
+  const chartDataIOM = useMemo(() => {
+    // Si no tenemos altura o peso, no renderizar IOM
+    if (!preGestationalBmi) return null;
+
+    let limits = iomNormalLimits;
+    let bgColor = 'rgba(76, 175, 80, 0.4)';
+    let bdrColor = 'rgba(34, 197, 94, 0.8)';
+    let chartTitle = 'IOM: Ganancia Recomendada (Normopeso)';
+
+    if (preGestationalBmi < 18.5) {
+      limits = iomBajoPesoLimits;
+      bgColor = 'rgba(235, 150, 150, 0.4)';
+      bdrColor = 'rgba(239, 68, 68, 0.8)';
+      chartTitle = 'IOM: Ganancia Recomendada (Bajo Peso)';
+    } else if (preGestationalBmi >= 25 && preGestationalBmi < 30) {
+      limits = iomSobrepesoLimits;
+      bgColor = 'rgba(255, 152, 0, 0.4)';
+      bdrColor = 'rgba(234, 179, 8, 0.8)';
+      chartTitle = 'IOM: Ganancia Recomendada (Sobrepeso)';
+    } else if (preGestationalBmi >= 30) {
+      limits = iomObesidadLimits;
+      bgColor = 'rgba(255, 235, 59, 0.4)';
+      bdrColor = 'rgba(202, 138, 4, 0.8)';
+      chartTitle = 'IOM: Ganancia Recomendada (Obesidad)';
+    }
+
+    const startWeek = Math.min(6, weeks[0]); // Usual entry starts slightly late, IOM starts at 1
+    const endWeek = 40;
+    const plottedWeeks = iomWeeksList.filter(w => w >= startWeek && w <= endWeek);
+    
+    // Map max/min strictly for the weeks we show
+    const localMax = plottedWeeks.map(w => limits.max[w - 1]);
+    const localMin = plottedWeeks.map(w => limits.min[w - 1]);
+    
+    const userTrajectoryPoints = plottedWeeks.map(w => {
+      const found = history.find(h => h.week === w);
+      return found ? found.weightGain : null;
+    });
+
+    return {
+      labels: plottedWeeks,
+      datasets: [
+        {
+          label: 'Límite Máximo',
+          data: localMax,
+          borderColor: 'transparent',
+          backgroundColor: bgColor,
+          fill: '+1',
+          pointRadius: 0,
+          borderWidth: 0,
+          order: 2,
+          tension: 0.1
+        },
+        {
+          label: 'Límite Mínimo',
+          data: localMin,
+          borderColor: 'transparent',
+          backgroundColor: 'transparent',
+          fill: false,
+          pointRadius: 0,
+          borderWidth: 0,
+          order: 1,
+          tension: 0.1
+        },
+        {
+          label: 'Mi Ganancia Neta (kg)',
+          data: userTrajectoryPoints,
+          borderColor: '#a855f7',
+          backgroundColor: '#a855f7',
+          showLine: true,
+          borderWidth: 4,
+          spanGaps: true,
+          pointStyle: 'circle',
+          pointRadius: 6,
+          pointHoverRadius: 8,
+          pointBorderColor: '#fff',
+          pointBorderWidth: 2,
+          tension: 0.1,
+          order: 0
+        }
+      ],
+      _customTitle: chartTitle // metadata passed out
+    };
+  }, [history, preGestationalBmi]);
+
+  const chartOptionsIOM = {
+    responsive: true,
+    maintainAspectRatio: false,
+    color: '#fff',
+    scales: {
+      x: { title: { display: true, text: 'Semana de Gestación', color: '#ccc' }, ticks: { color: '#ccc', stepSize: 2 }, grid: { color: 'rgba(255,255,255,0.1)' } },
+      y: { title: { display: true, text: 'Ganancia Acumulada (kg)', color: '#ccc' }, min: -2, max: 20, ticks: { color: '#ccc', stepSize: 2 }, grid: { color: 'rgba(255,255,255,0.1)' } }
+    },
+    plugins: {
+      legend: { position: 'top', labels: { color: '#fff' } },
+      title: { display: false },
+      tooltip: { mode: 'index', intersect: false }
+    },
+    interaction: { mode: 'nearest', axis: 'x', intersect: false }
+  };
 
   const preCatInfo = preGestationalBmi ? getCategoryInfo(preGestationalBmi, 'standard') : null;
   const lastPoint = history.length > 0 ? history[history.length - 1] : null;
@@ -401,8 +522,26 @@ export default function Antropometria() {
             </div>
           </div>
 
-          <div id="chartContainer" className="bg-white/5 border border-white/10 rounded-2xl p-4 md:p-6 h-[400px] md:h-[500px]">
-            <Line data={chartData} options={chartOptions} />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-4 md:p-6 flex flex-col items-center">
+              <h4 className="text-white font-semibold text-center mb-4 text-xs md:text-sm bg-black/40 px-4 py-2 rounded-full border border-white/10">
+                Trayectoria Estado Nutricional (Calvo et al.)
+              </h4>
+              <div id="chartContainer" className="w-full h-[350px] md:h-[450px]">
+                <Line data={chartData} options={chartOptions} />
+              </div>
+            </div>
+
+            {chartDataIOM && (
+              <div className="bg-white/5 border border-white/10 rounded-2xl p-4 md:p-6 flex flex-col items-center">
+                <h4 className="text-white font-semibold text-center mb-4 text-xs md:text-sm bg-black/40 px-4 py-2 rounded-full border border-white/10">
+                  {chartDataIOM._customTitle}
+                </h4>
+                <div id="chartContainerIOM" className="w-full h-[350px] md:h-[450px]">
+                  <Line data={chartDataIOM} options={chartOptionsIOM} />
+                </div>
+              </div>
+            )}
           </div>
 
           {/* History List/Editor */}
@@ -429,7 +568,7 @@ export default function Antropometria() {
                       return (
                         <tr key={point.week} className="hover:bg-white/5 transition-colors group">
                           <td className="px-4 py-4 font-medium text-white">Semana {point.week}</td>
-                          <td className="px-4 py-4">{point.weight || '--'} kg</td>
+                          <td className="px-4 py-4">{point.weight || '--'} kg <span className="text-[10px] text-gray-500 ml-1">({point.weightGain >= 0 ? '+' : ''}{point.weightGain} kg)</span></td>
                           <td className="px-4 py-4">{point.bmi}</td>
                           <td className="px-4 py-4">
                             <span className={clsx("px-2 py-0.5 rounded-full text-[10px]", cssClass)}>

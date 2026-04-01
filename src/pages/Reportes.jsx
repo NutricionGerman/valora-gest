@@ -9,7 +9,8 @@ export default function Reportes() {
     antropometria: null,
     clinica: null,
     bioquimica: null,
-    alimentaria: null
+    alimentaria: null,
+    diagnostico: null
   });
 
   const [isGenerating, setIsGenerating] = useState(false);
@@ -25,13 +26,15 @@ export default function Reportes() {
       const clinicaStr = localStorage.getItem(`valoracion_clinica_${patientId}`);
       const bioquimicaStr = localStorage.getItem(`parametros_bioquimicos_${patientId}`);
       const alimentariaStr = localStorage.getItem(`historia_alimentaria_${patientId}`);
+      const diagnosticoStr = localStorage.getItem(`diagnostico_${patientId}`);
 
       setData({
         filiacion: filiacionStr ? JSON.parse(filiacionStr) : null,
         antropometria: antropometriaStr ? JSON.parse(antropometriaStr) : null,
         clinica: clinicaStr ? JSON.parse(clinicaStr) : null,
         bioquimica: bioquimicaStr ? JSON.parse(bioquimicaStr) : null,
-        alimentaria: alimentariaStr ? JSON.parse(alimentariaStr) : null
+        alimentaria: alimentariaStr ? JSON.parse(alimentariaStr) : null,
+        diagnostico: diagnosticoStr ? JSON.parse(diagnosticoStr) : null
       });
     } catch (e) {
       console.error("Error loading report data:", e);
@@ -160,7 +163,8 @@ export default function Reportes() {
                        key === 'clinica' ? 'Valoración Clínica' : 
                        key === 'antropometria' ? 'Antropometría' : 
                        key === 'bioquimica' ? 'P. Bioquímicos' : 
-                       key === 'alimentaria' ? 'H. Alimentaria' : key}
+                       key === 'alimentaria' ? 'H. Alimentaria' : 
+                       key === 'diagnostico' ? 'Diagnóstico PES' : key}
                     </span>
                   </div>
                   {value ? (
@@ -431,6 +435,24 @@ export default function Reportes() {
                   <div style={{ padding: '8px', background: '#fdf2f8', border: '1px solid #fce7f3', borderRadius: '4px' }}>
                     <p><strong>Alergias:</strong> {data.alimentaria.preferencias?.alergias || '---'}</p>
                     <p><strong>Intolerancias:</strong> {data.alimentaria.preferencias?.intolerancias || '---'}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* V. DIAGNÓSTICO NUTRICIONAL PES */}
+            {data.diagnostico && (
+              <div style={{ marginBottom: '32px' }}>
+                <h3 style={{ fontSize: '14px', fontWeight: 'bold', padding: '8px', marginBottom: '16px', textTransform: 'uppercase', letterSpacing: '0.05em', borderLeft: '4px solid #0d9488', backgroundColor: '#f0fdfa' }}>
+                  🎯 V. DIAGNÓSTICO NUTRICIONAL
+                </h3>
+                <div style={{ padding: '16px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '13px' }}>
+                  <p style={{ margin: '0 0 12px 0' }}><strong>Problema (P):</strong> {data.diagnostico.problema || '---'}</p>
+                  <p style={{ margin: '0 0 12px 0' }}><strong>Etiología (E):</strong> {data.diagnostico.etiologia || '---'}</p>
+                  <p style={{ margin: '0 0 16px 0' }}><strong>Signos/Síntomas (S):</strong> {data.diagnostico.signos || '---'}</p>
+                  
+                  <div style={{ padding: '12px', background: '#e0f2fe', border: '1px solid #bae6fd', borderRadius: '4px', fontSize: '14px', fontStyle: 'italic', fontWeight: 'bold', color: '#0369a1' }}>
+                    "Paciente presenta {data.diagnostico.problema || '[-]'} relacionado con {data.diagnostico.etiologia || '[-]'} evidenciado por {data.diagnostico.signos || '[-]'}."
                   </div>
                 </div>
               </div>

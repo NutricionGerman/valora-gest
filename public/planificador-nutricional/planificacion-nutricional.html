@@ -1,0 +1,929 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Planificación Nutricional Asistida</title>
+    <!-- jsPDF Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- jsPDF AutoTable Plugin -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
+    
+    <!-- === Google Fonts Link === -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- === Favicon Links === -->
+    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+    <link rel="manifest" href="site.webmanifest">
+    <link rel="shortcut icon" href="favicon.ico">
+    <meta name="msapplication-TileColor" content="#ffffff">
+    <meta name="theme-color" content="#1c1d21">
+
+    <!-- === INICIO DEL CSS EMBEBIDO (de style.css) === -->
+    <style>
+        /* ==========================================================================
+   1. PALETA DE COLORES (MODO OSCURO) Y RESETEO
+   ========================================================================== */
+:root {
+    --primary-dark: #1c1d21;
+    --accent-orange: #e87a3d;
+    --accent-teal: #4c9a9b;
+    --xp-color: #f59e0b; 
+    --text-light: #f0f0f0;
+    --text-muted-light: rgba(240, 240, 240, 0.7);
+    --glass-bg: rgba(28, 29, 33, 0.6);
+    --glass-border: rgba(255, 255, 255, 0.1);
+    --glass-bg-darker: rgba(0, 0, 0, 0.25);
+}
+
+body {
+    font-family: 'Poppins', -apple-system, sans-serif;
+    line-height: 1.6;
+    margin: 0;
+    color: var(--text-light);
+    background-image: url('https://i.postimg.cc/bwd1p28N/Image-fx-6.png');
+    background-size: cover;
+    background-position: center center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    background-color: var(--primary-dark);
+}
+
+/* ==========================================================================
+   2. HEADER Y LAYOUT
+   ========================================================================== */
+.page-header {
+    display: flex; align-items: center; justify-content: space-between;
+    background-color: var(--primary-dark);
+    padding: 15px 40px;
+    border-bottom: 1px solid var(--glass-border);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+.header-logo img { max-height: 70px; }
+.header-text { text-align: right; }
+.header-text .subtitle { margin: 0 0 5px 0; font-size: 0.9em; color: var(--accent-teal); font-weight: 500; }
+.header-text h1 { margin: 0 0 8px 0; font-size: 2em; color: var(--text-light); }
+.group-input label { font-size: 0.85em; margin-right: 8px; color: var(--text-muted-light); }
+.group-input input {
+    padding: 6px 10px; font-size: 0.85em; border-radius: 4px; max-width: 180px;
+    background-color: var(--glass-bg-darker); border: 1px solid var(--glass-border); color: var(--text-light);
+}
+.group-input input:focus { box-shadow: 0 0 0 3px rgba(232, 122, 61, 0.4); outline: none; }
+
+.main-wrapper {
+    display: flex; justify-content: center; gap: 30px;
+    flex-wrap: wrap; align-items: flex-start;
+    padding: 30px;
+}
+.main-wrapper.two-column-layout { justify-content: space-between; }
+
+/* ==========================================================================
+   3. ESTILOS DEL ASISTENTE (WIZARD)
+   ========================================================================== */
+#wizard-container {
+    background: var(--glass-bg);
+    backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+    border: 1px solid var(--glass-border);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.35);
+    padding: 30px; border-radius: 12px;
+    width: 100%; max-width: 800px;
+    transition: max-width 0.3s ease;
+}
+.two-column-layout #wizard-container { max-width: none; flex-grow: 3; flex-basis: 0; min-width: 450px; }
+
+#wizard-progress { display: flex; justify-content: space-between; margin-bottom: 30px; position: relative; }
+#wizard-progress::before { content: ''; position: absolute; top: 50%; left: 0; width: 100%; height: 2px; background-color: var(--glass-border); transform: translateY(-50%); z-index: 1; }
+.step-indicator {
+    width: 30px; height: 30px; border-radius: 50%; background-color: var(--primary-dark);
+    border: 2px solid var(--glass-border); display: flex; align-items: center; justify-content: center;
+    font-weight: 600; color: var(--text-muted-light); transition: all 0.3s ease;
+    position: relative; z-index: 2; cursor: default;
+}
+.step-indicator::after {
+    content: attr(data-step-name); position: absolute; top: 130%;
+    font-size: 0.7em; color: var(--text-muted-light); white-space: nowrap; opacity: 0.7;
+}
+.step-indicator.active { border-color: var(--accent-orange); color: var(--accent-orange); }
+.step-indicator.completed { background-color: var(--accent-orange); border-color: var(--accent-orange); color: var(--text-light); }
+
+.wizard-step { display: none; animation: fadeIn 0.5s ease-in-out; }
+.wizard-step.active { display: block; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+#wizard-navigation { display: flex; justify-content: space-between; margin-top: 30px; border-top: 1px solid var(--glass-border); padding-top: 20px; }
+#wizard-navigation button, .action-buttons button {
+    padding: 10px 25px; border-radius: 6px; border: none; cursor: pointer;
+    font-size: 1em; font-weight: 500; transition: all 0.2s;
+}
+#wizard-prev-btn { background-color: #495057; color: var(--text-light); }
+#wizard-prev-btn:hover { background-color: #5a6268; }
+#wizard-next-btn { background-color: var(--accent-orange); color: var(--text-light); }
+#wizard-next-btn:hover { background-color: #ff8c4f; }
+#save-all-pdf-button { background-color: var(--accent-teal); color: var(--text-light); display: none; }
+#save-all-pdf-button:hover { background-color: #5bc0c1; }
+
+/* ==========================================================================
+   4. SIDEBAR Y CONTENIDO DE PASOS
+   ========================================================================== */
+#wizard-sidebar { display: none; flex-direction: column; gap: 20px; flex-grow: 2; flex-basis: 0; min-width: 400px; }
+.two-column-layout #wizard-sidebar { display: flex; }
+#sidebar-step7-content, #sidebar-step8-content { display: flex; flex-direction: column; gap: 20px; }
+
+label { display: block; margin-bottom: 8px; font-weight: 500; color: var(--text-muted-light); }
+select, input, textarea {
+    width: 100%; padding: 12px 15px; margin-bottom: 18px;
+    border: 1px solid var(--glass-border); border-radius: 6px; box-sizing: border-box;
+    background-color: var(--glass-bg-darker); color: var(--text-light);
+    font-family: 'Poppins', sans-serif; font-size: 0.95em;
+}
+select:focus, input:focus, textarea:focus { border-color: var(--accent-orange); box-shadow: 0 0 0 3px rgba(232, 122, 61, 0.4); outline: none; }
+.section-title-styled { background-color: rgba(232, 122, 61, 0.1); border-left: 5px solid var(--accent-orange); padding: 12px 18px; margin-bottom: 20px; font-size: 1.25em; color: var(--accent-orange); font-weight: 600; border-radius: 0 6px 6px 0; }
+.goal-setting, .info-section { border-top: 1px dashed var(--glass-border); padding-top: 20px; margin-top: 20px; }
+.goal-setting:first-child, .info-section:first-child { border-top: none; padding-top: 0; margin-top: 0; }
+.goal-inputs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+
+.meal-section {
+    background: var(--glass-bg); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+    border: 1px solid var(--glass-border); box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.35);
+    padding: 25px; border-radius: 12px;
+}
+#menu-plan-container { display: flex; flex-direction: column; gap: 20px; }
+.dri-link { background-color: var(--accent-teal); color: white; padding: 8px 15px; text-decoration: none; border-radius: 5px; font-size: 0.9em; font-weight: 500; transition: background-color 0.2s; display: inline-block; }
+.dri-link:hover { background-color: #5bc0c1; }
+.dri-link-container { text-align: right; }
+.amdr-results-table, #detailed-food-table { width: 100%; border-collapse: collapse; margin-top: 18px; font-size: 0.9em; }
+.amdr-results-table th, .amdr-results-table td, #detailed-food-table th, #detailed-food-table td { border: 1px solid var(--glass-border); padding: 8px 10px; text-align: center; }
+.amdr-results-table th, #detailed-food-table th { background-color: var(--glass-bg-darker); font-weight: 600; }
+.meal-section-header { border-bottom: 1px solid var(--glass-border); padding-bottom: 12px; margin-bottom: 18px; display: flex; justify-content: space-between; align-items: center; }
+.meal-section-header h3 { margin: 0; color: var(--accent-teal); font-size: 1.2em; }
+.meal-section ol { list-style: decimal; padding-left: 25px; margin: 15px 0 0 0; max-height: 200px; overflow-y: auto; font-size: 0.95em; transition: max-height 0.3s ease-out; }
+.preparation-notes h5 { font-size: 1em; color: var(--text-light); margin-bottom: 10px; font-weight: 600; }
+.image-upload-container { margin-top: 15px; padding-top: 10px; border-top: 1px dashed var(--glass-border); display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
+.btn-upload-meal-image, .btn-remove-meal-image { padding: 8px 15px; font-size: 0.9em; border: none; border-radius: 5px; cursor: pointer; color: white; }
+.btn-upload-meal-image { background-color: var(--accent-teal); }
+.btn-remove-meal-image { background-color: #c9302c; }
+.summary, .adequacy-summary, .specific-progress { margin-top: 0; }
+.summary h3, .adequacy-summary h3, .specific-progress h3 { color: var(--text-light); }
+.progress-bar-container { flex-grow: 1; height: 18px; background-color: var(--glass-bg-darker); border-radius: 5px; overflow: hidden; margin: 0 12px; border: 1px solid var(--glass-border); }
+.progress-bar { height: 100%; background-color: var(--accent-teal); width: 0%; transition: width 0.3s ease-in-out; }
+.progress-bar.limit-exceeded { background-color: var(--accent-orange); }
+.progress-text { min-width: 120px; text-align: right; }
+.progress-item { display: flex; align-items: center; margin-bottom: 12px; }
+#detailed-list-container { margin-top: 30px; border: 1px solid var(--glass-border); border-radius: 8px; background-color: transparent; box-shadow: none; }
+.detailed-list-header { background-color: var(--glass-bg-darker); padding: 12px 18px; display: flex; justify-content: space-between; align-items: center; }
+.detailed-list-header h4 { margin: 0; }
+#error-message { color: #f87171; background-color: rgba(220, 38, 38, 0.15); border: 1px solid rgba(220, 38, 38, 0.3); padding: 8px; border-radius: 4px; margin-bottom: 15px; }
+#error-message:empty { display: none; }
+
+/* --- NUEVOS ESTILOS PARA BOTONES --- */
+.action-buttons { display: flex; gap: 10px; margin-bottom: 20px; }
+#add-button { background-color: var(--accent-orange); color: var(--text-light); flex-grow: 1; }
+#add-button:hover { background-color: #ff8c4f; }
+#undo-button { background-color: #495057; color: var(--text-light); }
+#undo-button:hover { background-color: #5a6268; }
+#undo-button:disabled { background-color: #343a40; color: #6c757d; cursor: not-allowed; }
+
+#print-pdf-button, button.expand-toggle {
+    background: var(--glass-bg-darker); border: 1px solid var(--glass-border); color: var(--text-muted-light);
+    padding: 5px 12px; font-size: 0.9em; border-radius: 5px; cursor: pointer; transition: all 0.2s;
+}
+#print-pdf-button:hover, button.expand-toggle:hover { background-color: rgba(255,255,255,0.1); color: var(--text-light); }
+
+#detailed-food-table .btn-small-action {
+    font-size: 0.8em; padding: 4px 10px; margin: 0 2px;
+    background-color: var(--glass-bg-darker); border: 1px solid var(--glass-border);
+    color: var(--text-muted-light); border-radius: 4px; cursor: pointer;
+    transition: all 0.2s;
+}
+#detailed-food-table .btn-small-action:hover { background-color: rgba(255,255,255,0.1); color: var(--text-light); }
+/* --- FIN DE NUEVOS ESTILOS --- */
+
+.adequacy-summary .target-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.adequacy-summary .target-label { flex-basis: 50%; }
+.adequacy-summary .target-value { font-weight: bold; }
+.adequacy-percent { font-weight: bold; padding: 3px 8px; border-radius: 4px; color: white; font-size: 0.9em; min-width: 50px; text-align: center; }
+.adequacy-ok { background-color: #28a745; }
+.adequacy-low { background-color: #ffc107; color: #212529; }
+.adequacy-high { background-color: #dc3545; }
+.adequacy-na { background-color: #6c757d; }
+    </style>
+    <!-- === FIN DEL CSS EMBEBIDO (de style.css) === -->
+
+    <!-- === INICIO DEL CÓDIGO AÑADIDO PARA OPTIMIZACIÓN MÓVIL === -->
+    <style>
+        /* Estilos para hacer la aplicación responsiva en dispositivos móviles */
+
+        /* Para tablets y pantallas más pequeñas (breakpoint: 992px) */
+        @media (max-width: 992px) {
+            .main-wrapper {
+                /* Cambia el layout de lado a lado a uno apilado verticalmente */
+                flex-direction: column;
+                align-items: center; /* Centra los bloques de contenido */
+                padding: 15px; /* Reduce el padding en pantallas más pequeñas */
+            }
+
+            #wizard-container, #wizard-sidebar {
+                /* Hacemos que ambos contenedores ocupen todo el ancho disponible */
+                width: 100%;
+                max-width: 100%; /* Ocupa el ancho completo dentro del wrapper */
+                margin-right: 0;
+                margin-left: 0;
+            }
+
+            #wizard-sidebar {
+                /* La barra lateral ahora se mostrará debajo del contenido principal */
+                margin-top: 2rem;
+                position: static; /* Anula cualquier posicionamiento fijo o absoluto del CSS original */
+                height: auto;
+            }
+        }
+
+        /* Para dispositivos móviles (breakpoint: 768px) */
+        @media (max-width: 768px) {
+            body {
+                padding: 0; /* Quitamos el padding del body para que el contenido ocupe todo */
+            }
+
+            .page-header {
+                /* Apila el logo y el texto del encabezado verticalmente */
+                flex-direction: column;
+                text-align: center;
+                padding: 1rem;
+            }
+
+            .header-logo {
+                margin-right: 0;
+                margin-bottom: 1rem;
+            }
+            
+            h1 {
+                font-size: 1.8rem; /* Reduce el tamaño del título principal */
+            }
+            
+            .subtitle {
+                font-size: 0.9rem;
+            }
+
+            #wizard-container {
+                padding: 20px; /* Reduce el padding interno del wizard */
+            }
+
+            /* Apila los inputs de macros, micros y caracteres para mejor usabilidad */
+            .micro-goal-inputs, .caracteres-grid {
+                grid-template-columns: 1fr; /* Una sola columna */
+                gap: 1rem;
+            }
+            
+            .goal-inputs {
+                display: flex; /* Cambiamos a flex para apilar mejor */
+                flex-direction: column;
+                align-items: stretch;
+                gap: 1rem;
+            }
+            
+            .goal-inputs > div {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+
+            .goal-inputs input {
+                width: 50%; /* Asegura que el input no sea demasiado grande */
+                text-align: right;
+                margin-bottom: 0;
+            }
+
+            /* Forzar que las tablas sean scrolleables horizontalmente si no caben */
+            #detailed-table-wrapper {
+                overflow-x: auto;
+            }
+        }
+
+        /* Para pantallas muy pequeñas (breakpoint: 480px) */
+        @media (max-width: 480px) {
+            .main-wrapper {
+                padding: 10px;
+            }
+
+            #wizard-progress {
+                /* Para ahorrar espacio, ocultamos los nombres de los pasos */
+                justify-content: space-around;
+            }
+
+            .step-indicator::after {
+                display: none; 
+            }
+
+            #wizard-navigation {
+                /* Apila los botones de navegación */
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+
+            #wizard-navigation button {
+                width: 100%; /* Cada botón ocupa todo el ancho */
+            }
+
+            .detailed-list-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.5rem;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+            }
+        }
+    </style>
+    <!-- === FIN DEL CÓDIGO AÑADIDO PARA OPTIMIZACIÓN MÓVIL === -->
+
+</head>
+<body>
+
+
+
+<!-- Main Wrapper -->
+<div class="main-wrapper">
+    <div id="wizard-container" class="container">
+        <!-- Progress Bar -->
+        <div id="wizard-progress">
+            <div class="step-indicator" data-step-name="Finalidad">1</div>
+            <div class="step-indicator" data-step-name="GET">2</div>
+            <div class="step-indicator" data-step-name="Macros">3</div>
+            <div class="step-indicator" data-step-name="Micros">4</div>
+            <div class="step-indicator" data-step-name="Caracteres">5</div>
+            <div class="step-indicator" data-step-name="Interpretación">6</div>
+            <div class="step-indicator" data-step-name="Alimentos">7</div>
+            <div class="step-indicator" data-step-name="Menú">8</div>
+        </div>
+
+        <div id="error-message"></div>
+
+        <!-- Step 1 -->
+        <div class="wizard-step">
+            <div class="goal-setting">
+                <div class="section-title-styled">1) Finalidad del Plan Alimentario</div>
+                <div class="input-group">
+                    <textarea id="plan-purpose-input" rows="4" placeholder="Ej: Cubrir los requerimientos nutricionales según el sexo y edad."></textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 2 -->
+        <div class="wizard-step">
+            <div class="goal-setting">
+                <div class="section-title-styled">2) Gasto Energético Total - GET (kcal)</div>
+                <div class="input-group">
+                    <input type="number" id="tdee-input" min="0" step="10" placeholder="Ej: 2000">
+                </div>
+                <div class="dri-link-container">
+                    <a href="https://www.nal.usda.gov/human-nutrition-and-food-safety/dri-calculator" target="_blank" class="dri-link">Usar Calculadora DRI</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 3 -->
+        <div class="wizard-step">
+            <div class="goal-setting">
+                <div class="section-title-styled">3) Requerimiento de Macronutrientes (AMDR) - Formula Calórica</div>
+                <label>AMDR (%):</label>
+                <div class="goal-inputs">
+                    <div><label for="carb-percent-input">HC</label><input type="number" id="carb-percent-input" min="0" max="100" step="1" placeholder="%"></div>
+                    <div><label for="protein-percent-input">P</label><input type="number" id="protein-percent-input" min="0" max="100" step="1" placeholder="%"></div>
+                    <div><label for="fat-percent-input">G</label><input type="number" id="fat-percent-input" min="0" max="100" step="1" placeholder="%"></div>
+                </div>
+                <span id="percent-warning"></span>
+                <table class="amdr-results-table"><thead><tr><th>Macronutrientes</th><th>% AMDR</th><th>Calorías</th><th>Gramos</th></tr></thead><tbody><tr><td>HC</td><td id="amdr-hc-percent" class="value-col">0%</td><td id="amdr-hc-calories" class="value-col">0 Kcal</td><td id="amdr-hc-grams" class="value-col">0 g</td></tr><tr><td>P</td><td id="amdr-p-percent" class="value-col">0%</td><td id="amdr-p-calories" class="value-col">0 Kcal</td><td id="amdr-p-grams" class="value-col">0 g</td></tr><tr><td>G</td><td id="amdr-g-percent" class="value-col">0%</td><td id="amdr-g-calories" class="value-col">0 Kcal</td><td id="amdr-g-grams" class="value-col">0 g</td></tr></tbody></table>
+            </div>
+        </div>
+
+        <!-- Step 4 -->
+        <div class="wizard-step">
+            <div class="goal-setting">
+                <div class="section-title-styled">4) Requerimiento de Micronutrientes - Nutrientes Objetivos</div>
+                <div class="micro-goal-inputs">
+                    <div><label for="fibra-goal-input">Fibra (g)</label><input type="number" id="fibra-goal-input" min="0" placeholder="Ej: 25"></div>
+                    <div><label for="vitc-goal-input">Vit C (mg)</label><input type="number" id="vitc-goal-input" min="0" placeholder="Ej: 75"></div>
+                    <div><label for="hierro-goal-input">Hierro (mg)</label><input type="number" id="hierro-goal-input" min="0" placeholder="Ej: 18"></div>
+                    <div><label for="calcio-goal-input">Calcio (mg)</label><input type="number" id="calcio-goal-input" min="0" placeholder="Ej: 1000"></div>
+                    <div><label for="sodio-limit-input">Sodio (mg)<span class="max-label">MAX</span></label><input type="number" id="sodio-limit-input" min="0" placeholder="Ej: 2300"></div>
+                    <div><label for="colesterol-limit-input">Colest (mg)<span class="max-label">MAX</span></label><input type="number" id="colesterol-limit-input" min="0" placeholder="Ej: 300"></div>
+                    <div><label for="ags-limit-input">G.Sat (g)<span class="max-label">MAX</span></label><input type="number" id="ags-limit-input" min="0" placeholder="Ej: 20"></div>
+                </div>
+                <div class="dri-link-container"><a href="https://www.nal.usda.gov/human-nutrition-and-food-safety/dri-calculator" target="_blank" class="dri-link">Usar Calculadora DRI</a></div>
+            </div>
+        </div>
+
+        <!-- Step 5 -->
+        <div class="wizard-step">
+            <div class="info-section">
+                <div class="section-title-styled">5) Caracteres Físicos y Químicos</div>
+                <div class="caracteres-grid"><label for="caracteres-distribucion">Distribución</label><input type="text" id="caracteres-distribucion" placeholder="ej: 4 comidas y una colacion"><label for="caracteres-temperatura">Temperatura</label><input type="text" id="caracteres-temperatura" placeholder="ej: Según preparación"><label for="caracteres-consistencia">Consistencia</label><input type="text" id="caracteres-consistencia" placeholder="ej: (Sólida, semisólida o líquida, dependiendo del alimento.)"><label for="caracteres-volumen">Volumen</label><input type="text" id="caracteres-volumen" placeholder="ej: Normal - según preparacion"><label for="caracteres-fibra">Fibra</label><input type="text" id="caracteres-fibra" placeholder="ej: Segun RDA"><label for="caracteres-vitaminas">Vitaminas y minerales</label><input type="text" id="caracteres-vitaminas" placeholder="ej: Segun RDA"><label for="caracteres-liquido">Liquido</label><input type="text" id="caracteres-liquido" placeholder="ej: 1ml x Kcal (sin alcohol)"></div>
+            </div>
+        </div>
+
+        <!-- Step 6 -->
+        <div class="wizard-step">
+            <div class="info-section">
+                <div class="section-title-styled">6) Interpretación de la Prescripción</div>
+                <div class="input-group"><textarea id="interpretacion-prescripcion" rows="6" placeholder="ej: Se indica una dieta normocalórica..."></textarea></div>
+            </div>
+        </div>
+
+        <!-- Step 7 -->
+        <div class="wizard-step">
+            <div class="goal-setting">
+                <div class="section-title-styled">7) Formula Desarrollada</div>
+                <div><label for="food-input">Busca y selecciona un Alimento:</label><input type="text" id="food-input" list="food-datalist" placeholder="Escribe para buscar..."><datalist id="food-datalist"></datalist></div>
+                <div><label for="quantity-input">Cantidad (en gramos):</label><input type="number" id="quantity-input" min="0.1" step="0.1" placeholder="Ej: 150"></div>
+                <div id="meal-type-container"><label for="meal-type-select">Tipo de Comida:</label><select id="meal-type-select"><option value="">-- Elige --</option><option value="Desayuno">Desayuno</option><option value="Colación">Colación</option><option value="Almuerzo">Almuerzo</option><option value="Merienda">Merienda</option><option value="Cena">Cena</option></select></div>
+                <div class="action-buttons">
+                    <button id="add-button">Añadir Alimento</button>
+                    <button id="undo-button" disabled>Deshacer Último Añadido</button>
+                </div>
+                <div id="detailed-list-container"><div class="detailed-list-header"><h4>Alimentos Añadidos</h4><div class="header-buttons"><button id="print-pdf-button">Imprimir Lista</button><button class="expand-toggle" id="detailed-list-toggle" data-target-list="detailed-table-wrapper" aria-expanded="false" aria-controls="detailed-table-wrapper" title="Expandir/Colapsar lista">⊞</button></div></div><div id="detailed-table-wrapper"><table id="detailed-food-table"><thead><tr><th>Alimento</th><th>gramos</th><th>Hc</th><th>P</th><th>G</th><th>Fibra</th><th>Colest</th><th>G.Sat</th><th>Sodio</th><th>Vit C</th><th>Hierro</th><th>Calcio</th><th class="actions-column">Acciones</th></tr></thead><tbody id="detailed-food-list-body"><tr class="empty-message-row"><td colspan="13">Aún no hay alimentos añadidos.</td></tr></tbody></table></div></div>
+            </div>
+        </div>
+        
+        <!-- Step 8 -->
+        <div class="wizard-step">
+            <div id="menu-plan-container">
+                 <div class="section-title-styled">8) Plan de Menú Semanal</div>
+                 <!-- Meal sections will be moved here by JS -->
+            </div>
+        </div>
+
+        <!-- Navigation -->
+        <div id="wizard-navigation">
+            <button id="wizard-prev-btn">Anterior</button>
+            <button id="wizard-next-btn">Siguiente</button>
+            <button id="save-all-pdf-button">Guardar Plan Completo en PDF</button>
+        </div>
+    </div>
+
+    <!-- Right Sidebar for Steps 7 & 8 -->
+    <div id="wizard-sidebar">
+        <div id="sidebar-step7-content">
+            <div class="specific-progress meal-section">
+                <h3>Progreso Nutrientes Específicos</h3>
+                <div class="progress-item"><span class="progress-label">Fibra (g):</span><div class="progress-bar-container"><div id="progress-bar-fibra" class="progress-bar"></div></div><span class="progress-text" id="progress-text-fibra">0.0 / 0.0 g</span></div>
+                <div class="progress-item"><span class="progress-label">Vit C (mg):</span><div class="progress-bar-container"><div id="progress-bar-vitc" class="progress-bar"></div></div><span class="progress-text" id="progress-text-vitc">0.0 / 0.0 mg</span></div>
+                <div class="progress-item"><span class="progress-label">Hierro (mg):</span><div class="progress-bar-container"><div id="progress-bar-hierro" class="progress-bar"></div></div><span class="progress-text" id="progress-text-hierro">0.0 / 0.0 mg</span></div>
+                <div class="progress-item"><span class="progress-label">Calcio (mg):</span><div class="progress-bar-container"><div id="progress-bar-calcio" class="progress-bar"></div></div><span class="progress-text" id="progress-text-calcio">0 / 0 mg</span></div>
+                <hr><div class="progress-item"><span class="progress-label">G. Sat (g) <small>MAX</small>:</span><div class="progress-bar-container"><div id="progress-bar-ags" class="progress-bar"></div></div><span class="progress-text" id="progress-text-ags">0.0 / 0.0 g</span></div>
+                <div class="progress-item"><span class="progress-label">Colest (mg) <small>MAX</small>:</span><div class="progress-bar-container"><div id="progress-bar-colesterol" class="progress-bar"></div></div><span class="progress-text" id="progress-text-colesterol">0 / 0 mg</span></div>
+                <div class="progress-item"><span class="progress-label">Sodio (mg) <small>MAX</small>:</span><div class="progress-bar-container"><div id="progress-bar-sodio" class="progress-bar"></div></div><span class="progress-text" id="progress-text-sodio">0 / 0 mg</span></div>
+            </div>
+            <div class="summary meal-section"><h3>Resumen Total Diario</h3><p>Carbohidratos (g): <span id="total-hco">0.0</span></p><p>Proteínas (g): <span id="total-proteinas">0.0</span></p><p>Lípidos (g): <span id="total-lipidos">0.0</span></p><hr><p><strong>Calorías Totales (kcal):</strong> <span id="total-calorias">0</span></p></div>
+            <div class="adequacy-summary meal-section"><h3>Adecuación vs. Objetivos</h3><div class="target-row"><span class="target-label">Calorías (kcal):</span><span class="target-value" id="target-calorias-val">0</span><span class="adequacy-percent" id="adequacy-calorias">N/A</span></div><div class="target-row"><span class="target-label">Proteínas (g):</span><span class="target-value" id="target-proteinas-val">0.0</span><span class="adequacy-percent" id="adequacy-proteinas">N/A</span></div><div class="target-row"><span class="target-label">Carbohidratos (g):</span><span class="target-value" id="target-carbos-val">0.0</span><span class="adequacy-percent" id="adequacy-carbos">N/A</span></div><div class="target-row"><span class="target-label">Grasas (g):</span><span class="target-value" id="target-grasas-val">0.0</span><span class="adequacy-percent" id="adequacy-grasas">N/A</span></div></div>
+        </div>
+        <div id="sidebar-step8-content">
+             <!-- Meal sections are dynamically placed here -->
+        </div>
+    </div>
+</div>
+
+<!-- Template for meal sections that will be moved by JS -->
+<div id="meal-sections-template" style="display:none;">
+    <div class="meal-section" id="section-desayuno"><div class="meal-section-header"><h3>Desayuno</h3><div class="header-buttons"><button class="expand-toggle" data-target-list="list-desayuno" aria-expanded="false">⊞</button></div></div><ol id="list-desayuno"><li class="empty-message">Aún no hay nada añadido.</li></ol><div class="preparation-notes"><h5>Ideas de Menú / Preparación</h5><textarea id="prep-desayuno" placeholder="Escribe aquí..."></textarea><div class="image-upload-container"><input type="file" id="image-file-desayuno" class="image-file-input" data-meal-type-input="Desayuno" accept="image/*" style="display:none;"><button type="button" class="btn-upload-meal-image" data-meal-type="Desayuno">Subir Imagen</button><div class="image-preview-container"><img id="preview-image-desayuno" class="meal-image-preview" src="#" alt="Previsualización" style="display:none;"></div><button type="button" class="btn-remove-meal-image" data-meal-type="Desayuno" style="display:none;">Eliminar Imagen</button></div></div></div>
+    <div class="meal-section" id="section-colacion"><div class="meal-section-header"><h3>Colación</h3><div class="header-buttons"><button class="expand-toggle" data-target-list="list-colacion" aria-expanded="false">⊞</button></div></div><ol id="list-colacion"><li class="empty-message">Aún no hay nada añadido.</li></ol><div class="preparation-notes"><h5>Ideas de Menú / Preparación</h5><textarea id="prep-colacion" placeholder="Escribe aquí..."></textarea><div class="image-upload-container"><input type="file" id="image-file-colacion" class="image-file-input" data-meal-type-input="Colación" accept="image/*" style="display:none;"><button type="button" class="btn-upload-meal-image" data-meal-type="Colación">Subir Imagen</button><div class="image-preview-container"><img id="preview-image-colacion" class="meal-image-preview" src="#" alt="Previsualización" style="display:none;"></div><button type="button" class="btn-remove-meal-image" data-meal-type="Colación" style="display:none;">Eliminar Imagen</button></div></div></div>
+    <div class="meal-section" id="section-almuerzo"><div class="meal-section-header"><h3>Almuerzo</h3><div class="header-buttons"><button class="expand-toggle" data-target-list="list-almuerzo" aria-expanded="false">⊞</button></div></div><ol id="list-almuerzo"><li class="empty-message">Aún no hay nada añadido.</li></ol><div class="preparation-notes"><h5>Ideas de Menú / Preparación</h5><textarea id="prep-almuerzo" placeholder="Escribe aquí..."></textarea><div class="image-upload-container"><input type="file" id="image-file-almuerzo" class="image-file-input" data-meal-type-input="Almuerzo" accept="image/*" style="display:none;"><button type="button" class="btn-upload-meal-image" data-meal-type="Almuerzo">Subir Imagen</button><div class="image-preview-container"><img id="preview-image-almuerzo" class="meal-image-preview" src="#" alt="Previsualización" style="display:none;"></div><button type="button" class="btn-remove-meal-image" data-meal-type="Almuerzo" style="display:none;">Eliminar Imagen</button></div></div></div>
+    <div class="meal-section" id="section-merienda"><div class="meal-section-header"><h3>Merienda</h3><div class="header-buttons"><button class="expand-toggle" data-target-list="list-merienda" aria-expanded="false">⊞</button></div></div><ol id="list-merienda"><li class="empty-message">Aún no hay nada añadido.</li></ol><div class="preparation-notes"><h5>Ideas de Menú / Preparación</h5><textarea id="prep-merienda" placeholder="Escribe aquí..."></textarea><div class="image-upload-container"><input type="file" id="image-file-merienda" class="image-file-input" data-meal-type-input="Merienda" accept="image/*" style="display:none;"><button type="button" class="btn-upload-meal-image" data-meal-type="Merienda">Subir Imagen</button><div class="image-preview-container"><img id="preview-image-merienda" class="meal-image-preview" src="#" alt="Previsualización" style="display:none;"></div><button type="button" class="btn-remove-meal-image" data-meal-type="Merienda" style="display:none;">Eliminar Imagen</button></div></div></div>
+    <div class="meal-section" id="section-cena"><div class="meal-section-header"><h3>Cena</h3><div class="header-buttons"><button class="expand-toggle" data-target-list="list-cena" aria-expanded="false">⊞</button></div></div><ol id="list-cena"><li class="empty-message">Aún no hay nada añadido.</li></ol><div class="preparation-notes"><h5>Ideas de Menú / Preparación</h5><textarea id="prep-cena" placeholder="Escribe aquí..."></textarea><div class="image-upload-container"><input type="file" id="image-file-cena" class="image-file-input" data-meal-type-input="Cena" accept="image/*" style="display:none;"><button type="button" class="btn-upload-meal-image" data-meal-type="Cena">Subir Imagen</button><div class="image-preview-container"><img id="preview-image-cena" class="meal-image-preview" src="#" alt="Previsualización" style="display:none;"></div><button type="button" class="btn-remove-meal-image" data-meal-type="Cena" style="display:none;">Eliminar Imagen</button></div></div></div>
+</div>
+
+<script src="js/alimentos.js"></script>
+
+<!-- === INICIO DEL JAVASCRIPT EMBEBIDO (de script.js) === -->
+<script defer>
+// =========================================================================
+// --- INICIO DE LA LÓGICA DEL SCRIPT ---
+// Este script combina la funcionalidad del Wizard y la lógica del planificador original.
+// =========================================================================
+document.addEventListener('DOMContentLoaded', () => {
+
+    // --- CAPA 1: LÓGICA DEL ASISTENTE VISUAL (WIZARD) ---
+    const wizardSteps = document.querySelectorAll('.wizard-step');
+    const progressIndicators = document.querySelectorAll('.step-indicator');
+    const prevBtn = document.getElementById('wizard-prev-btn');
+    const nextBtn = document.getElementById('wizard-next-btn');
+    const saveAllPdfButtonWizard = document.getElementById('save-all-pdf-button');
+    const mainWrapper = document.querySelector('.main-wrapper');
+    const wizardSidebar = document.getElementById('wizard-sidebar');
+    const sidebarStep7 = document.getElementById('sidebar-step7-content');
+    const sidebarStep8 = document.getElementById('sidebar-step8-content');
+    const menuPlanContainer = document.getElementById('menu-plan-container');
+    const mealSectionsTemplate = document.getElementById('meal-sections-template');
+
+    menuPlanContainer.append(...mealSectionsTemplate.children);
+    mealSectionsTemplate.remove();
+
+    let currentStep = 0;
+    const totalSteps = wizardSteps.length;
+
+    const updateWizardUI = () => {
+        wizardSteps.forEach((step, index) => {
+            step.style.display = index === currentStep ? 'block' : 'none';
+        });
+
+        progressIndicators.forEach((indicator, index) => {
+            indicator.classList.remove('active', 'completed');
+            if (index < currentStep) indicator.classList.add('completed');
+            else if (index === currentStep) indicator.classList.add('active');
+        });
+        
+        prevBtn.style.display = currentStep === 0 ? 'none' : 'inline-block';
+        nextBtn.style.display = currentStep === totalSteps - 1 ? 'none' : 'inline-block';
+        saveAllPdfButtonWizard.style.display = currentStep === totalSteps - 1 ? 'inline-block' : 'none';
+        
+        const isTwoColumn = currentStep === 6 || currentStep === 7;
+        mainWrapper.classList.toggle('two-column-layout', isTwoColumn);
+        wizardSidebar.style.display = isTwoColumn ? 'flex' : 'none';
+        sidebarStep7.style.display = currentStep === 6 ? 'flex' : 'none';
+        sidebarStep8.style.display = currentStep === 7 ? 'flex' : 'none';
+    };
+
+    nextBtn.addEventListener('click', () => { if (currentStep < totalSteps - 1) { currentStep++; updateWizardUI(); } });
+    prevBtn.addEventListener('click', () => { if (currentStep > 0) { currentStep--; updateWizardUI(); } });
+    
+    updateWizardUI();
+
+    // --- FIN DE LA LÓGICA DEL WIZARD ---
+
+
+    // =========================================================================
+    // --- CAPA 2: LÓGICA ORIGINAL Y FUNCIONAL DEL PLANIFICADOR ---
+    // =========================================================================
+    const mealTypes = ["Desayuno", "Colación", "Almuerzo", "Merienda", "Cena"];
+    const KCAL_PER_G = { proteinas: 4, hco: 4, lipidos: 9 };
+    let additionHistory = [];
+    let totalHco = 0, totalProteinas = 0, totalLipidos = 0, totalCalorias = 0,
+        totalFibra = 0, totalVitC = 0, totalHierro = 0, totalCalcio = 0,
+        totalAGS = 0, totalColesterol = 0, totalSodio = 0;
+    let targetGET = 0, targetProteinPercent = 0, targetCarbPercent = 0, targetFatPercent = 0;
+    let targetProteinGrams = 0, targetCarbGrams = 0, targetFatGrams = 0;
+    let goalFibra = 25, goalVitC = 75, goalHierro = 18, goalCalcio = 1000,
+        limitAGS = 20, limitColesterol = 300, limitSodio = 2300;
+    let mealImages = {};
+    mealTypes.forEach(type => mealImages[type] = null);
+    
+    let groupNumberInput, foodInput, foodDatalist, quantityInput, mealTypeSelect,
+        addButton, undoButton, saveAllPdfButton, printPdfButton, errorMessageDiv,
+        planPurposeInput, tdeeInput, proteinPercentInput, carbPercentInput,
+        fatPercentInput, percentWarningSpan, amdrHcPercentSpan, amdrHcCaloriesSpan,
+        amdrHcGramsSpan, amdrPPercentSpan, amdrPCaloriesSpan, amdrPGramsSpan,
+        amdrGPercentSpan, amdrGCaloriesSpan, amdrGGramsSpan, fibraGoalInput,
+        vitcGoalInput, hierroGoalInput, calcioGoalInput, sodioLimitInput,
+        colesterolLimitInput, agsLimitInput, caracteresDistribucionInput,
+        caracteresTemperaturaInput, caracteresConsistenciaInput, caracteresVolumenInput,
+        caracteresFibraInput, caracteresVitaminasInput, caracteresLiquidoInput,
+        interpretacionInput, prepDesayunoTextarea, prepColacionTextarea, prepAlmuerzoTextarea,
+        prepMeriendaTextarea, prepCenaTextarea, totalHcoSpan, totalProteinasSpan,
+        totalLipidosSpan, totalCaloriasSpan, targetCaloriasValSpan, targetProteinasValSpan,
+        targetCarbosValSpan, targetGrasasValSpan, adequacyCaloriasSpan, adequacyProteinasSpan,
+        adequacyCarbosSpan, adequacyGrasasSpan, progressBarFibra, progressTextFibra,
+        progressBarVitC, progressTextVitC, progressBarHierro, progressTextHierro,
+        progressBarCalcio, progressTextCalcio, progressBarAGS, progressTextAGS,
+        progressBarColesterol, progressTextColesterol, progressBarSodio, progressTextSodio,
+        detailedListBody, prepTextareaMap;
+    
+    function cacheDOMElements() {
+        groupNumberInput = document.getElementById('group-number-input'); foodInput = document.getElementById('food-input'); foodDatalist = document.getElementById('food-datalist'); quantityInput = document.getElementById('quantity-input'); mealTypeSelect = document.getElementById('meal-type-select'); addButton = document.getElementById('add-button'); undoButton = document.getElementById('undo-button'); saveAllPdfButton = document.getElementById('save-all-pdf-button'); printPdfButton = document.getElementById('print-pdf-button'); errorMessageDiv = document.getElementById('error-message'); planPurposeInput = document.getElementById('plan-purpose-input'); tdeeInput = document.getElementById('tdee-input'); proteinPercentInput = document.getElementById('protein-percent-input'); carbPercentInput = document.getElementById('carb-percent-input'); fatPercentInput = document.getElementById('fat-percent-input'); percentWarningSpan = document.getElementById('percent-warning'); amdrHcPercentSpan = document.getElementById('amdr-hc-percent'); amdrHcCaloriesSpan = document.getElementById('amdr-hc-calories'); amdrHcGramsSpan = document.getElementById('amdr-hc-grams'); amdrPPercentSpan = document.getElementById('amdr-p-percent'); amdrPCaloriesSpan = document.getElementById('amdr-p-calories'); amdrPGramsSpan = document.getElementById('amdr-p-grams'); amdrGPercentSpan = document.getElementById('amdr-g-percent'); amdrGCaloriesSpan = document.getElementById('amdr-g-calories'); amdrGGramsSpan = document.getElementById('amdr-g-grams'); fibraGoalInput = document.getElementById('fibra-goal-input'); vitcGoalInput = document.getElementById('vitc-goal-input'); hierroGoalInput = document.getElementById('hierro-goal-input'); calcioGoalInput = document.getElementById('calcio-goal-input'); sodioLimitInput = document.getElementById('sodio-limit-input'); colesterolLimitInput = document.getElementById('colesterol-limit-input'); agsLimitInput = document.getElementById('ags-limit-input'); caracteresDistribucionInput = document.getElementById('caracteres-distribucion'); caracteresTemperaturaInput = document.getElementById('caracteres-temperatura'); caracteresConsistenciaInput = document.getElementById('caracteres-consistencia'); caracteresVolumenInput = document.getElementById('caracteres-volumen'); caracteresFibraInput = document.getElementById('caracteres-fibra'); caracteresVitaminasInput = document.getElementById('caracteres-vitaminas'); caracteresLiquidoInput = document.getElementById('caracteres-liquido'); interpretacionInput = document.getElementById('interpretacion-prescripcion'); prepDesayunoTextarea = document.getElementById('prep-desayuno'); prepColacionTextarea = document.getElementById('prep-colacion'); prepAlmuerzoTextarea = document.getElementById('prep-almuerzo'); prepMeriendaTextarea = document.getElementById('prep-merienda'); prepCenaTextarea = document.getElementById('prep-cena'); totalHcoSpan = document.getElementById('total-hco'); totalProteinasSpan = document.getElementById('total-proteinas'); totalLipidosSpan = document.getElementById('total-lipidos'); totalCaloriasSpan = document.getElementById('total-calorias'); targetCaloriasValSpan = document.getElementById('target-calorias-val'); targetProteinasValSpan = document.getElementById('target-proteinas-val'); targetCarbosValSpan = document.getElementById('target-carbos-val'); targetGrasasValSpan = document.getElementById('target-grasas-val'); adequacyCaloriasSpan = document.getElementById('adequacy-calorias'); adequacyProteinasSpan = document.getElementById('adequacy-proteinas'); adequacyCarbosSpan = document.getElementById('adequacy-carbos'); adequacyGrasasSpan = document.getElementById('adequacy-grasas'); progressBarFibra = document.getElementById('progress-bar-fibra'); progressTextFibra = document.getElementById('progress-text-fibra'); progressBarVitC = document.getElementById('progress-bar-vitc'); progressTextVitC = document.getElementById('progress-text-vitc'); progressBarHierro = document.getElementById('progress-bar-hierro'); progressTextHierro = document.getElementById('progress-text-hierro'); progressBarCalcio = document.getElementById('progress-bar-calcio'); progressTextCalcio = document.getElementById('progress-text-calcio'); progressBarAGS = document.getElementById('progress-bar-ags'); progressTextAGS = document.getElementById('progress-text-ags'); progressBarColesterol = document.getElementById('progress-bar-colesterol'); progressTextColesterol = document.getElementById('progress-text-colesterol'); progressBarSodio = document.getElementById('progress-bar-sodio'); progressTextSodio = document.getElementById('progress-text-sodio'); detailedListBody = document.getElementById('detailed-food-list-body'); prepTextareaMap = { "Desayuno": prepDesayunoTextarea, "Colación": prepColacionTextarea, "Almuerzo": prepAlmuerzoTextarea, "Merienda": prepMeriendaTextarea, "Cena": prepCenaTextarea };
+    }
+    
+    function populateFoodDatalist() {
+        foodDatalist.innerHTML = '';
+        if (typeof alimentos !== 'undefined' && Array.isArray(alimentos)) {
+            alimentos.sort((a, b) => a.nombre.localeCompare(b.nombre)).forEach(a => {
+                const option = document.createElement('option');
+                option.value = a.nombre;
+                foodDatalist.appendChild(option);
+            });
+        }
+    }
+
+    function updateConsumedSummaryView() { totalHcoSpan.textContent = totalHco.toFixed(1); totalProteinasSpan.textContent = totalProteinas.toFixed(1); totalLipidosSpan.textContent = totalLipidos.toFixed(1); totalCaloriasSpan.textContent = Math.round(totalCalorias); }
+    function updateSpecificNutrientProgressView() {
+        const updateProgress = (bar, text, consumed, target, unit, isLimit, precision) => {
+            text.textContent = `${consumed.toFixed(precision)} / ${target.toFixed(precision)} ${unit}`;
+            let percentage = (target > 0) ? Math.min((consumed / target) * 100, 100) : 0;
+            if (isLimit && consumed > target && target > 0) percentage = 100;
+            bar.style.width = `${percentage}%`;
+            bar.classList.toggle('limit-exceeded', isLimit && consumed > target && target > 0);
+        };
+        updateProgress(progressBarFibra, progressTextFibra, totalFibra, goalFibra, 'g', false, 1);
+        updateProgress(progressBarVitC, progressTextVitC, totalVitC, goalVitC, 'mg', false, 1);
+        updateProgress(progressBarHierro, progressTextHierro, totalHierro, goalHierro, 'mg', false, 1);
+        updateProgress(progressBarCalcio, progressTextCalcio, totalCalcio, goalCalcio, 'mg', false, 0);
+        updateProgress(progressBarAGS, progressTextAGS, totalAGS, limitAGS, 'g', true, 1);
+        updateProgress(progressBarColesterol, progressTextColesterol, totalColesterol, limitColesterol, 'mg', true, 0);
+        updateProgress(progressBarSodio, progressTextSodio, totalSodio, limitSodio, 'mg', true, 0);
+    }
+    function displayError(message) { errorMessageDiv.textContent = message; }
+    function clearError() { errorMessageDiv.textContent = ""; }
+    function updateUndoButtonState() { undoButton.disabled = additionHistory.length === 0; }
+    
+    function updateSimpleMealListsView() {
+        mealTypes.forEach(mealType => {
+            const listId = `list-${mealType.toLowerCase().replace('ó', 'o')}`;
+            const listElement = document.getElementById(listId);
+            if (listElement) {
+                listElement.innerHTML = "";
+                const itemsForThisMeal = additionHistory.filter(item => item.comida === mealType);
+                if (itemsForThisMeal.length === 0) {
+                    listElement.innerHTML = '<li class="empty-message">Aún no hay nada añadido.</li>';
+                } else {
+                    itemsForThisMeal.forEach(item => {
+                        const li = document.createElement("li");
+                        li.textContent = `${item.nombre} - ${item.cantidad.toFixed(1)} g`;
+                        listElement.appendChild(li);
+                    });
+                }
+            }
+        });
+    }
+
+    function updateDetailedFoodList() {
+        detailedListBody.innerHTML = '';
+        if (additionHistory.length === 0) {
+            detailedListBody.innerHTML = '<tr class="empty-message-row"><td colspan="13">Aún no hay alimentos añadidos.</td></tr>';
+        } else {
+            additionHistory.forEach((item, index) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="food-name-cell">${item.nombre}</td> <td>${item.cantidad.toFixed(1)}</td>
+                    <td>${item.hco.toFixed(1)}</td> <td>${item.proteinas.toFixed(1)}</td> <td>${item.lipidos.toFixed(1)}</td>
+                    <td>${item.fibra.toFixed(1)}</td> <td>${Math.round(item.colesterol)}</td> <td>${item.ags.toFixed(1)}</td>
+                    <td>${Math.round(item.sodio)}</td> <td>${item.vit_c.toFixed(1)}</td> <td>${item.hierro.toFixed(1)}</td>
+                    <td>${Math.round(item.calcio)}</td>
+                    <td class="actions-cell">
+                        <button class="edit-item-btn btn-small-action" data-index="${index}">Editar</button>
+                        <button class="delete-item-btn btn-small-action" data-index="${index}">Eliminar</button>
+                    </td>`;
+                detailedListBody.appendChild(row);
+            });
+        }
+    }
+
+    function calculateAndUpdateTargets() {
+        targetGET = parseFloat(tdeeInput.value) || 0;
+        const cP = parseFloat(carbPercentInput.value) || 0, pP = parseFloat(proteinPercentInput.value) || 0, fP = parseFloat(fatPercentInput.value) || 0;
+        const totalP = cP + pP + fP;
+        percentWarningSpan.textContent = (targetGET > 0 && Math.round(totalP) !== 100 && totalP > 0) ? `Suma: ${Math.round(totalP)}%, debería ser 100%.` : "";
+        const cKcal = targetGET * (cP / 100), pKcal = targetGET * (pP / 100), fKcal = targetGET * (fP / 100);
+        targetCarbGrams = targetGET > 0 ? cKcal / KCAL_PER_G.hco : 0;
+        targetProteinGrams = targetGET > 0 ? pKcal / KCAL_PER_G.proteinas : 0;
+        targetFatGrams = targetGET > 0 ? fKcal / KCAL_PER_G.lipidos : 0;
+        amdrHcPercentSpan.textContent = `${cP.toFixed(0)}%`; amdrHcCaloriesSpan.textContent = `${Math.round(cKcal)} Kcal`; amdrHcGramsSpan.textContent = `${targetCarbGrams.toFixed(1)} g`;
+        amdrPPercentSpan.textContent = `${pP.toFixed(0)}%`; amdrPCaloriesSpan.textContent = `${Math.round(pKcal)} Kcal`; amdrPGramsSpan.textContent = `${targetProteinGrams.toFixed(1)} g`;
+        amdrGPercentSpan.textContent = `${fP.toFixed(0)}%`; amdrGCaloriesSpan.textContent = `${Math.round(fKcal)} Kcal`; amdrGGramsSpan.textContent = `${targetFatGrams.toFixed(1)} g`;
+        targetCaloriasValSpan.textContent = Math.round(targetGET);
+        targetProteinasValSpan.textContent = targetProteinGrams.toFixed(1);
+        targetCarbosValSpan.textContent = targetCarbGrams.toFixed(1);
+        targetGrasasValSpan.textContent = targetFatGrams.toFixed(1);
+    }
+    
+    function readNutrientGoals() {
+        goalFibra = parseFloat(fibraGoalInput.value) || 0; goalVitC = parseFloat(vitcGoalInput.value) || 0; goalHierro = parseFloat(hierroGoalInput.value) || 0; goalCalcio = parseFloat(calcioGoalInput.value) || 0;
+        limitAGS = parseFloat(agsLimitInput.value) || 0; limitColesterol = parseFloat(colesterolLimitInput.value) || 0; limitSodio = parseFloat(sodioLimitInput.value) || 0;
+    }
+
+    function updateMacroAdequacyView() {
+        const getAdequacy = (consumed, target) => {
+            if (target <= 0) return { percent: "N/A", class: "adequacy-na" };
+            const percentage = (consumed / target) * 100;
+            let adequacyClass = percentage < 90 ? "adequacy-low" : percentage > 110 ? "adequacy-high" : "adequacy-ok";
+            return { percent: `${Math.round(percentage)}%`, class: adequacyClass };
+        };
+        const adequacies = { Calorias: getAdequacy(totalCalorias, targetGET), Proteinas: getAdequacy(totalProteinas, targetProteinGrams), Carbos: getAdequacy(totalHco, targetCarbGrams), Grasas: getAdequacy(totalLipidos, targetFatGrams) };
+        Object.keys(adequacies).forEach(key => {
+            const span = document.getElementById(`adequacy-${key.toLowerCase()}`);
+            span.textContent = adequacies[key].percent;
+            span.className = "adequacy-percent " + adequacies[key].class;
+        });
+    }
+
+    function updateAllTargetsAndProgress() { calculateAndUpdateTargets(); readNutrientGoals(); updateMacroAdequacyView(); updateSpecificNutrientProgressView(); }
+    
+    function handleAddFood() {
+        clearError();
+        const foodName = foodInput.value.trim(); const quantity = parseFloat(quantityInput.value); const mealType = mealTypeSelect.value;
+        if (!foodName || isNaN(quantity) || quantity <= 0 || !mealType) { displayError("Por favor, completa todos los campos."); return; }
+        const foodData = alimentos.find(f => f.nombre === foodName);
+        if (!foodData) { displayError(`Alimento "${foodName}" no encontrado.`); return; }
+        const factor = quantity / 100;
+        const addedItem = {
+            nombre: foodName, cantidad: quantity, comida: mealType,
+            hco: (foodData.hco || 0) * factor, proteinas: (foodData.proteinas || 0) * factor, lipidos: (foodData.lipidos || 0) * factor,
+            fibra: (foodData.fibra || 0) * factor, vit_c: (foodData.vit_c || 0) * factor, hierro: (foodData.hierro || 0) * factor,
+            calcio: (foodData.calcio || 0) * factor, ags: (foodData.ags || 0) * factor, colesterol: (foodData.colesterol || 0) * factor,
+            sodio: (foodData.sodio || 0) * factor
+        };
+        addedItem.calorias = (addedItem.hco * KCAL_PER_G.hco) + (addedItem.proteinas * KCAL_PER_G.proteinas) + (addedItem.lipidos * KCAL_PER_G.lipidos);
+        additionHistory.push(addedItem);
+        totalHco += addedItem.hco; totalProteinas += addedItem.proteinas; totalLipidos += addedItem.lipidos; totalCalorias += addedItem.calorias;
+        totalFibra += addedItem.fibra; totalVitC += addedItem.vit_c; totalHierro += addedItem.hierro; totalCalcio += addedItem.calcio;
+        totalAGS += addedItem.ags; totalColesterol += addedItem.colesterol; totalSodio += addedItem.sodio;
+        updateConsumedSummaryView(); updateMacroAdequacyView(); updateSpecificNutrientProgressView();
+        updateSimpleMealListsView(); updateDetailedFoodList(); updateUndoButtonState();
+        foodInput.value = ""; quantityInput.value = ""; mealTypeSelect.value = ""; foodInput.focus();
+    }
+
+    function handleUndo() {
+        if (additionHistory.length > 0) {
+            const lastItem = additionHistory.pop();
+            totalHco -= lastItem.hco; totalProteinas -= lastItem.proteinas; totalLipidos -= lastItem.lipidos; totalCalorias -= lastItem.calorias;
+            totalFibra -= lastItem.fibra; totalVitC -= lastItem.vit_c; totalHierro -= lastItem.hierro; totalCalcio -= lastItem.calcio;
+            totalAGS -= lastItem.ags; totalColesterol -= lastItem.colesterol; totalSodio -= lastItem.sodio;
+            updateConsumedSummaryView(); updateMacroAdequacyView(); updateSpecificNutrientProgressView();
+            updateSimpleMealListsView(); updateDetailedFoodList(); updateUndoButtonState();
+        }
+    }
+
+    function handleEditItem(index) {
+        const itemToEdit = additionHistory[index];
+        const newQuantityString = prompt(`Nueva cantidad en gramos para "${itemToEdit.nombre}":`, itemToEdit.cantidad.toFixed(1));
+        if (newQuantityString === null) return;
+        const newQuantity = parseFloat(newQuantityString);
+        if (isNaN(newQuantity) || newQuantity <= 0) { displayError("Cantidad inválida."); return; }
+        const originalMealType = itemToEdit.comida;
+        handleDeleteItem(index);
+        foodInput.value = itemToEdit.nombre;
+        quantityInput.value = newQuantity;
+        mealTypeSelect.value = originalMealType;
+        handleAddFood();
+    }
+
+    function handleDeleteItem(index) {
+        if (index < 0 || index >= additionHistory.length) return;
+        const itemToRemove = additionHistory.splice(index, 1)[0];
+        if (itemToRemove) {
+            totalHco -= itemToRemove.hco; totalProteinas -= itemToRemove.proteinas; totalLipidos -= itemToRemove.lipidos; totalCalorias -= itemToRemove.calorias;
+            totalFibra -= itemToRemove.fibra; totalVitC -= itemToRemove.vit_c; totalHierro -= itemToRemove.hierro; totalCalcio -= itemToRemove.calcio;
+            totalAGS -= itemToRemove.ags; totalColesterol -= itemToRemove.colesterol; totalSodio -= itemToRemove.sodio;
+            updateConsumedSummaryView(); updateMacroAdequacyView(); updateSpecificNutrientProgressView();
+            updateSimpleMealListsView(); updateDetailedFoodList(); updateUndoButtonState();
+        }
+    }
+    
+    function handleMealImageUpload(event) {
+        const button = event.currentTarget;
+        const mealType = button.dataset.mealType;
+        const fileInput = document.getElementById(`image-file-${mealType.toLowerCase().replace('ó','o')}`);
+        fileInput.click();
+        fileInput.onchange = (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (loadEvent) => {
+                mealImages[mealType] = loadEvent.target.result;
+                const preview = document.getElementById(`preview-image-${mealType.toLowerCase().replace('ó','o')}`);
+                const removeBtn = document.querySelector(`.btn-remove-meal-image[data-meal-type="${mealType}"]`);
+                preview.src = loadEvent.target.result;
+                preview.style.display = 'block';
+                removeBtn.style.display = 'inline-block';
+                button.textContent = `Reemplazar Imagen`;
+            };
+            reader.readAsDataURL(file);
+        };
+    }
+
+    function handleRemoveMealImage(event) {
+        const button = event.currentTarget;
+        const mealType = button.dataset.mealType;
+        mealImages[mealType] = null;
+        const preview = document.getElementById(`preview-image-${mealType.toLowerCase().replace('ó','o')}`);
+        const uploadBtn = document.querySelector(`.btn-upload-meal-image[data-meal-type="${mealType}"]`);
+        preview.src = '#';
+        preview.style.display = 'none';
+        button.style.display = 'none';
+        uploadBtn.textContent = `Subir Imagen`;
+        const fileInput = document.getElementById(`image-file-${mealType.toLowerCase().replace('ó','o')}`);
+        if(fileInput) fileInput.value = '';
+    }
+
+    function handlePrintPdf() {
+        if (additionHistory.length === 0) { alert("No hay alimentos para imprimir."); return; }
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        doc.text("Formula Desarrollada - Alimentos Añadidos", 14, 15);
+        const tableColumn = ["Alimento", "g", "Hc", "P", "G", "Fib", "Col", "Sat", "Sod", "VitC", "Fe", "Ca"];
+        const tableRows = additionHistory.map(item => [ item.nombre, item.cantidad.toFixed(1), item.hco.toFixed(1), item.proteinas.toFixed(1), item.lipidos.toFixed(1), item.fibra.toFixed(1), Math.round(item.colesterol), item.ags.toFixed(1), Math.round(item.sodio), item.vit_c.toFixed(1), item.hierro.toFixed(1), Math.round(item.calcio) ]);
+        doc.autoTable({ head: [tableColumn], body: tableRows, startY: 25 });
+        doc.save('formula_desarrollada.pdf');
+    }
+    
+    // =========================================================================
+    // --- FUNCIÓN DE PDF COMPLETO (CORREGIDA Y MEJORADA) ---
+    // =========================================================================
+    function handleSaveAllPdf() {
+        const { jsPDF } = window.jspdf; const doc = new jsPDF('p', 'mm', 'a4'); let startY = 15; const pageHeight = doc.internal.pageSize.height; const margin = 15; const usableWidth = doc.internal.pageSize.width - (margin * 2);
+        const titleFontSize = 12; const textFontSize = 10; const tableFontSize = 9; const smallFontSize = 8; const titleBgColor = [44, 62, 80]; const titleTextColor = [255, 255, 255]; const titleAccentColor = [232, 122, 61]; const mealTitleFontSize = 11; const prepNoteFontSize = 9;
+        const summaryHeaderBgColor = [76, 154, 155]; const summaryHeaderTextColor = [255, 255, 255];
+        const headStyle = { fillColor: [240, 246, 255], textColor: [51, 51, 51], fontStyle: 'bold' };
+
+        const addTitle = (title) => { const titleHeight = 7; if (startY + titleHeight + 6 > pageHeight - margin) { doc.addPage(); startY = margin; } doc.setFontSize(titleFontSize); doc.setFont(undefined, 'bold'); doc.setFillColor(...titleBgColor); doc.rect(margin - 5, startY - 4, usableWidth + 10, titleHeight, 'F'); doc.setFillColor(...titleAccentColor); doc.rect(margin - 5, startY - 4, 3, titleHeight, 'F'); doc.setTextColor(...titleTextColor); doc.text(title, margin, startY); doc.setFont(undefined, 'normal'); doc.setTextColor(0, 0, 0); startY += titleHeight + 2; };
+        const addText = (text, x, y, maxWidth, fontStyle = 'normal', fontSize = textFontSize) => { if (!text || text.trim() === '') text = "N/A"; doc.setFontSize(fontSize); doc.setFont(undefined, fontStyle); const lines = doc.splitTextToSize(text, maxWidth); const textHeight = lines.length * (fontSize * 0.35); if (y + textHeight > pageHeight - margin) { doc.addPage(); y = margin; } doc.text(lines, x, y); return y + textHeight + 2; };
+        const addTable = (config) => {
+            let finalY = (doc.autoTable.previous && doc.autoTable.previous.finalY) ? doc.autoTable.previous.finalY : startY;
+            let estimatedHeight = (Array.isArray(config.body) ? config.body.length + 1 : 2) * 7;
+            if (finalY + estimatedHeight > pageHeight - margin) { doc.addPage(); startY = margin; }
+            config.startY = startY;
+            doc.autoTable(config);
+            return (doc.autoTable.previous?.finalY ?? startY) + 10;
+        };
+        
+        doc.setFontSize(10); doc.setTextColor(100); doc.text("Catedra de Nutricion Infantil - UNSTA", doc.internal.pageSize.width - margin, startY, { align: 'right' }); doc.setFontSize(18); doc.setTextColor(44, 62, 80); doc.text("Planificación Nutricional", margin, startY + 5); const groupNum = groupNumberInput.value.trim(); if (groupNum) { doc.setFontSize(10); doc.setTextColor(73, 80, 87); doc.text(`N° DE GRUPO: ${groupNum}`, doc.internal.pageSize.width - margin, startY + 5, { align: 'right' }); } startY += 15; doc.setTextColor(0, 0, 0);
+
+        addTitle("1) Finalidad del Plan Alimentario"); startY = addText(planPurposeInput.value, margin, startY, usableWidth);
+        addTitle("2) Gasto Energético Total (GET)"); startY = addText(`GET: ${tdeeInput.value || 'N/A'} kcal`, margin, startY, usableWidth);
+        addTitle("3) Requerimiento Macronutrientes (AMDR)"); startY = addTable({ html: '.amdr-results-table', theme: 'grid', headStyles: headStyle, styles: { fontSize: tableFontSize }, margin: { left: margin, right: margin } });
+        addTitle("4) Micronutrientes / Límites (Objetivo vs Consumido)"); const microBody = [['Fibra (g)', fibraGoalInput.value, totalFibra.toFixed(1)], ['Vit C (mg)', vitcGoalInput.value, totalVitC.toFixed(1)], ['Hierro (mg)', hierroGoalInput.value, totalHierro.toFixed(1)], ['Calcio (mg)', calcioGoalInput.value, Math.round(totalCalcio)], ['Sodio (mg) (MAX)', sodioLimitInput.value, Math.round(totalSodio)], ['Colest (mg) (MAX)', colesterolLimitInput.value, Math.round(totalColesterol)], ['G.Sat (g) (MAX)', agsLimitInput.value, totalAGS.toFixed(1)]]; startY = addTable({ head: [['Nutriente', 'Objetivo / Límite', 'Consumido']], body: microBody, theme: 'grid', headStyles: headStyle, styles: { fontSize: tableFontSize }, margin: { left: margin, right: margin } });
+        addTitle("5) Caracteres Físicos y Químicos"); const caracBody = [['Distribución', caracteresDistribucionInput.value], ['Temperatura', caracteresTemperaturaInput.value], ['Consistencia', caracteresConsistenciaInput.value], ['Volumen', caracteresVolumenInput.value], ['Fibra', caracteresFibraInput.value], ['Vitaminas y minerales', caracteresVitaminasInput.value], ['Liquido', caracteresLiquidoInput.value]]; startY = addTable({ head: [['Característica', 'Valor']], body: caracBody, theme: 'grid', headStyles: headStyle, columnStyles: { 0: { fontStyle: 'bold'} }, margin: { left: margin, right: margin } });
+        addTitle("6) Interpretación"); startY = addText(interpretacionInput.value, margin, startY, usableWidth);
+        
+        if (startY > pageHeight / 2) { doc.addPage(); startY = margin; }
+        
+        addTitle("7) Formula Desarrollada"); const foodHead = [["Alimento", "g", "Hc", "P", "G", "Fib", "Col", "Sat", "Sod", "VitC", "Fe", "Ca"]]; const foodBody = additionHistory.map(item => [item.nombre, item.cantidad.toFixed(1), item.hco.toFixed(1), item.proteinas.toFixed(1), item.lipidos.toFixed(1), item.fibra.toFixed(1), Math.round(item.colesterol), item.ags.toFixed(1), Math.round(item.sodio), item.vit_c.toFixed(1), item.hierro.toFixed(1), Math.round(item.calcio)]); startY = addTable({ head: foodHead, body: foodBody, theme: 'grid', styles: { fontSize: smallFontSize, cellPadding: 1.2 }, headStyles: headStyle, columnStyles: { 0: { cellWidth: 'auto'} }, margin: { left: margin, right: margin } });
+        addTitle("Resumen Total Diario"); const summaryBody = [['Carbohidratos (g)', totalHco.toFixed(1)], ['Proteínas (g)', totalProteinas.toFixed(1)], ['Lípidos (g)', totalLipidos.toFixed(1)], ['Calorías (kcal)', Math.round(totalCalorias)]]; startY = addTable({ head: [['Nutriente', 'Total Consumido']], body: summaryBody, theme: 'grid', headStyles: { fillColor: summaryHeaderBgColor, textColor: summaryHeaderTextColor }, columnStyles: { 0: { fontStyle: 'bold'} }, margin: { left: margin, right: margin } });
+        addTitle("Adecuación vs. Objetivos"); const adequacyBody = [['Calorías (kcal)', Math.round(targetGET), adequacyCaloriasSpan.textContent], ['Proteínas (g)', targetProteinGrams.toFixed(1), adequacyProteinasSpan.textContent], ['Carbohidratos (g)', targetCarbGrams.toFixed(1), adequacyCarbosSpan.textContent], ['Grasas (g)', targetFatGrams.toFixed(1), adequacyGrasasSpan.textContent]]; startY = addTable({ head: [['Nutriente', 'Objetivo', 'Adecuación (%)']], body: adequacyBody, theme: 'grid', headStyles: { fillColor: [204, 229, 255], textColor: [0, 64, 133] }, columnStyles: { 0: { fontStyle: 'bold'} }, margin: { left: margin, right: margin } });
+        
+        addTitle("8) Plan de Menú");
+        const textBlockWidth = usableWidth * 0.65; const imageBlockX = margin + textBlockWidth + 5; const imageBlockWidth = usableWidth - textBlockWidth - 5; const maxImageHeight = 45;
+        mealTypes.forEach(mealType => {
+            const items = additionHistory.filter(item => item.comida === mealType);
+            const notes = prepTextareaMap[mealType].value.trim();
+            const imageDataUrl = mealImages[mealType];
+            if (items.length > 0 || notes || imageDataUrl) {
+                if (startY + 30 > pageHeight - margin) { doc.addPage(); startY = margin; }
+                let textBlockY = startY;
+                doc.setFontSize(mealTitleFontSize); doc.setFont(undefined, 'bold'); doc.text(mealType, margin, textBlockY); textBlockY += 7;
+                doc.setFont(undefined, 'normal'); doc.setFontSize(textFontSize);
+                if (items.length > 0) { items.forEach(item => { textBlockY = addText(`${item.nombre} - ${item.cantidad.toFixed(1)}g`, margin, textBlockY, textBlockWidth, 'normal', 9); }); }
+                if (notes) { textBlockY = addText(`Preparación: ${notes}`, margin, textBlockY, textBlockWidth, 'italic', prepNoteFontSize); }
+                let imageEndY = startY;
+                if (imageDataUrl) {
+                    try {
+                        const imgProps = doc.getImageProperties(imageDataUrl); let imgWidth = imageBlockWidth; let imgHeight = (imgProps.height * imgWidth) / imgProps.width;
+                        if (imgHeight > maxImageHeight) { imgHeight = maxImageHeight; imgWidth = (imgProps.width * imgHeight) / imgProps.height; }
+                        doc.addImage(imageDataUrl, 'JPEG', imageBlockX, startY, imgWidth, imgHeight);
+                        imageEndY = startY + imgHeight;
+                    } catch (e) { console.error("Error al añadir imagen al PDF:", e); }
+                }
+                startY = Math.max(textBlockY, imageEndY) + 10;
+            }
+        });
+        
+        doc.save('planificacion_nutricional_completa.pdf');
+    }
+    
+    // --- INICIALIZACIÓN ---
+    cacheDOMElements();
+    populateFoodDatalist();
+    
+    fibraGoalInput.value = goalFibra; vitcGoalInput.value = goalVitC; hierroGoalInput.value = goalHierro; calcioGoalInput.value = goalCalcio;
+    agsLimitInput.value = limitAGS; colesterolLimitInput.value = limitColesterol; sodioLimitInput.value = limitSodio;
+    
+    updateAllTargetsAndProgress();
+    
+    // --- ASIGNACIÓN DE EVENTOS ---
+    addButton.addEventListener('click', handleAddFood);
+    undoButton.addEventListener('click', handleUndo);
+    printPdfButton.addEventListener('click', handlePrintPdf);
+    saveAllPdfButton.addEventListener('click', handleSaveAllPdf);
+    const inputsToUpdate = [tdeeInput, proteinPercentInput, carbPercentInput, fatPercentInput, fibraGoalInput, vitcGoalInput, hierroGoalInput, calcioGoalInput, sodioLimitInput, colesterolLimitInput, agsLimitInput];
+    inputsToUpdate.forEach(input => input.addEventListener('input', updateAllTargetsAndProgress));
+    
+    detailedListBody.addEventListener('click', (e) => {
+        const target = e.target.closest('button');
+        if (!target) return;
+        const index = parseInt(target.dataset.index, 10);
+        if (target.classList.contains('edit-item-btn')) handleEditItem(index);
+        else if (target.classList.contains('delete-item-btn')) handleDeleteItem(index);
+    });
+    
+    document.querySelectorAll('.btn-upload-meal-image').forEach(b => b.addEventListener('click', handleMealImageUpload));
+    document.querySelectorAll('.btn-remove-meal-image').forEach(b => b.addEventListener('click', handleRemoveMealImage));
+    
+    document.body.addEventListener('click', (event) => {
+        const toggleButton = event.target.closest(".expand-toggle");
+        if (toggleButton) {
+            const targetId = toggleButton.getAttribute("data-target-list");
+            const targetElement = document.getElementById(targetId);
+            if (targetElement) {
+                const isExpanded = targetElement.classList.toggle("expanded-list");
+                toggleButton.setAttribute("aria-expanded", isExpanded);
+                toggleButton.innerHTML = isExpanded ? "⊟" : "⊞";
+            }
+        }
+    });
+});
+</script>
+<!-- === FIN DEL JAVASCRIPT EMBEBIDO === -->
+
+</body>
+</html>
