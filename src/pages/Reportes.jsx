@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Download, FileText, CheckCircle, AlertCircle } from 'lucide-react';
+import { Download, FileText, CheckCircle, AlertCircle, X, Activity } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
+import { infoClinica } from '../data/infoClinica';
 
 export default function Reportes() {
   const [data, setData] = useState({
@@ -14,6 +15,7 @@ export default function Reportes() {
   });
 
   const [isGenerating, setIsGenerating] = useState(false);
+  const [selectedNutrient, setSelectedNutrient] = useState(null);
   const reportRef = useRef(null);
 
   useEffect(() => {
@@ -48,11 +50,6 @@ export default function Reportes() {
     setIsGenerating(true);
     
     try {
-      // Temporarily show the element to ensure all content is measured correctly
-      element.style.display = 'block';
-      element.style.position = 'static';
-      element.style.visibility = 'visible';
-
       const canvas = await html2canvas(element, {
         scale: 2,
         useCORS: true,
@@ -61,11 +58,6 @@ export default function Reportes() {
         windowWidth: element.scrollWidth,
         windowHeight: element.scrollHeight
       });
-
-      // Restore element styles
-      element.style.display = 'block';
-      element.style.position = 'absolute';
-      element.style.visibility = 'hidden';
 
       const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF({
@@ -76,9 +68,8 @@ export default function Reportes() {
 
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-
-      // Handle multi-page if height exceeds A4
       const pageHeight = pdf.internal.pageSize.getHeight();
+      
       let heightLeft = pdfHeight;
       let position = 0;
 
@@ -103,26 +94,6 @@ export default function Reportes() {
 
   const hasData = Object.values(data).some(v => v !== null);
 
-  const renderTable = (headers, rows, title) => (
-    <div style={{ marginBottom: '24px' }}>
-      {title && <h4 style={{ fontSize: '11px', fontWeight: 'bold', color: '#4b5563', marginBottom: '8px', textTransform: 'uppercase' }}>{title}</h4>}
-      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '10px', border: '1px solid #e5e7eb' }}>
-        <thead>
-          <tr style={{ backgroundColor: '#f9fafb' }}>
-            {headers.map((h, i) => <th key={i} style={{ padding: '8px', border: '1px solid #e5e7eb', textAlign: 'left' }}>{h}</th>)}
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row, i) => (
-            <tr key={i}>
-              {row.map((cell, j) => <td key={j} style={{ padding: '8px', border: '1px solid #e5e7eb' }}>{cell}</td>)}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-
   return (
     <div className="animate-in fade-in duration-500 space-y-6 relative overflow-hidden">
       <div className="flex justify-between items-center mb-6 relative z-10">
@@ -130,17 +101,19 @@ export default function Reportes() {
           <h2 className="text-2xl font-bold text-white">Reportes y Exportación</h2>
           <p className="text-gray-400">Consolidación de datos para la generación del PDF.</p>
         </div>
-        <button 
-          onClick={generatePDF} 
-          disabled={!hasData || isGenerating}
-          className="flex items-center px-4 py-2 bg-[var(--color-accent-teal)] hover:bg-teal-500 disabled:bg-gray-600 text-white rounded-xl font-medium transition-colors"
-        >
-          {isGenerating ? (
-            <span className="flex items-center"><span className="animate-spin mr-2">⏳</span> Generando...</span>
-          ) : (
-            <><Download className="w-4 h-4 mr-2" /> Exportar PDF</>
-          )}
-        </button>
+        <div className="flex gap-4">
+          <button 
+            onClick={generatePDF} 
+            disabled={!hasData || isGenerating}
+            className="flex items-center px-4 py-2 bg-[var(--color-accent-teal)] hover:bg-teal-500 disabled:bg-gray-600 text-white rounded-xl font-medium transition-colors"
+          >
+            {isGenerating ? (
+              <span className="flex items-center"><span className="animate-spin mr-2">⏳</span> Generando...</span>
+            ) : (
+              <><Download className="w-4 h-4 mr-2" /> Exportar PDF</>
+            )}
+          </button>
+        </div>
       </div>
 
       {!hasData ? (
@@ -179,295 +152,200 @@ export default function Reportes() {
             <div className="bg-black/20 border border-white/5 rounded-2xl p-6 relative overflow-hidden flex flex-col items-center justify-center">
                <div className="absolute inset-0 bg-gradient-to-br from-teal-500/5 to-purple-500/5" />
                <FileText className="w-16 h-16 text-gray-500 mb-4 opacity-50" />
-               <p className="text-center text-gray-400 relative z-10">El PDF incluirá todos los módulos marcados como "Completados".<br/>Haga clic en <strong>Exportar PDF</strong> para descargarlo.</p>
+               <p className="text-center text-gray-400 relative z-10">
+                 Haga clic en los nutrientes de la vista previa para ver información relevante.<br/>
+                 El PDF se generará con todos los datos completados.
+               </p>
             </div>
           </div>
 
-          {/* HIDDEN REPORT CONTAINER */}
-          <div 
-            ref={reportRef} 
-            className="absolute top-0 left-[-5000px] pointer-events-none -z-50 p-10"
-            style={{ 
-              width: '210mm', 
-              backgroundColor: '#ffffff', 
-              color: '#000000',
-              fontFamily: 'Arial, sans-serif'
-            }}
-          >
-            {/* ENCABEZADO */}
-            <div style={{ borderBottom: '3px solid #0d9488', paddingBottom: '16px', marginBottom: '32px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-              <div>
-                <h1 style={{ fontSize: '36px', fontWeight: '900', fontStyle: 'italic', letterSpacing: '-0.05em', color: '#0f766e', margin: 0 }}>ValoraGest</h1>
-                <h2 style={{ fontSize: '18px', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.1em', marginTop: '4px', color: '#4b5563', margin: 0 }}>Reporte de Valoración Nutricional Gestacional</h2>
-              </div>
-              <div style={{ textAlign: 'right', fontSize: '12px', color: '#6b7280' }}>
-                <p style={{ margin: 0 }}><strong>Fecha:</strong> {new Date().toLocaleDateString()}</p>
-                <p style={{ margin: 0 }}><strong>Protocolo:</strong> Control Prenatal Nutricional</p>
-              </div>
-            </div>
-
-            {/* 1. DATOS DE IDENTIFICACIÓN */}
-            {data.filiacion && (
-              <div style={{ marginBottom: '32px' }}>
-                <h3 style={{ fontSize: '14px', fontWeight: 'bold', padding: '8px', marginBottom: '16px', textTransform: 'uppercase', letterSpacing: '0.05em', borderLeft: '4px solid #0d9488', backgroundColor: '#f0fdfa' }}>
-                  📋 1. DATOS DE IDENTIFICACIÓN
-                </h3>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', fontSize: '13px' }}>
-                  <p style={{ gridColumn: 'span 2' }}><strong>Nombre completo:</strong> <span style={{ borderBottom: '1px solid #e5e7eb', paddingRight: '20px' }}>{data.filiacion.nombre}</span></p>
-                  <p><strong>Edad actual:</strong> {data.filiacion.edad} años 
-                    {(parseInt(data.filiacion.edad) < 20 || parseInt(data.filiacion.edad) > 35) && (
-                      <span style={{ marginLeft: '8px', color: '#b91c1c', fontWeight: 'bold' }}>(⚠️ Riesgo)</span>
-                    )}
-                  </p>
-                  <p><strong>DNI/N° ID:</strong> {data.filiacion.dni || '---'}</p>
-                  <p><strong>Teléfono:</strong> {data.filiacion.telefono || '---'}</p>
-                  <p><strong>Nivel educativo:</strong> {data.filiacion.nivelEducativo || '---'}</p>
-                  <p><strong>Ocupación:</strong> {data.filiacion.ocupacion || '---'}</p>
-                  <p style={{ gridColumn: 'span 2' }}><strong>Domicilio:</strong> {data.filiacion.domicilio || '---'}</p>
-                  <p><strong>Vive con:</strong> {data.filiacion.viveCon || '---'}</p>
-                  <p><strong>Apoyo familiar:</strong> {data.filiacion.redApoyo}</p>
+          <div className="mt-8 overflow-x-auto pb-10">
+            <h3 className="text-lg font-semibold text-white mb-4">Vista Previa Interactiva del Informe</h3>
+            <div 
+              ref={reportRef} 
+              className="mx-auto rounded-lg shadow-2xl"
+              style={{ 
+                width: '210mm', 
+                backgroundColor: '#ffffff', 
+                color: '#000000',
+                fontFamily: 'Arial, sans-serif',
+                minHeight: '297mm',
+                padding: '20mm'
+              }}
+            >
+              {/* ENCABEZADO */}
+              <div style={{ borderBottom: '3px solid #0d9488', paddingBottom: '16px', marginBottom: '32px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+                <div>
+                  <h1 style={{ fontSize: '36px', fontWeight: '900', fontStyle: 'italic', letterSpacing: '-0.05em', color: '#0f766e', margin: 0 }}>ValoraGest</h1>
+                  <h2 style={{ fontSize: '18px', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.1em', marginTop: '4px', color: '#4b5563', margin: 0 }}>Reporte de Valoración Nutricional Gestacional</h2>
+                </div>
+                <div style={{ textAlign: 'right', fontSize: '12px', color: '#6b7280' }}>
+                  <p style={{ margin: 0 }}><strong>Fecha:</strong> {new Date().toLocaleDateString()}</p>
                 </div>
               </div>
-            )}
 
-            {/* 2. ANTECEDENTES PERSONALES Y FAMILIARES */}
-            {data.filiacion && (
-              <div style={{ marginBottom: '32px' }}>
-                <h3 style={{ fontSize: '14px', fontWeight: 'bold', padding: '8px', marginBottom: '16px', textTransform: 'uppercase', letterSpacing: '0.05em', borderLeft: '4px solid #0d9488', backgroundColor: '#f0fdfa' }}>
-                  🩺 2. ANTECEDENTES PERSONALES Y FAMILIARES
-                </h3>
-                <div style={{ fontSize: '13px' }}>
-                  <div style={{ backgroundColor: '#f9fafb', padding: '12px', borderRadius: '4px', border: '1px solid #e5e7eb', marginBottom: '16px' }}>
-                    <p style={{ fontWeight: 'bold', marginBottom: '8px', fontSize: '11px', color: '#374151' }}>ANTECEDENTES PERSONALES:</p>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', marginBottom: '12px' }}>
-                      <p>{data.filiacion.enfDiabetes ? '☑' : '☐'} Diabetes</p>
-                      <p>{data.filiacion.enfHipertension ? '☑' : '☐'} Hipertensión</p>
-                      <p>{data.filiacion.enfHipotiroidismo ? '☑' : '☐'} Hipotiroidismo</p>
-                      <p>{data.filiacion.enfRenal ? '☑' : '☐'} Enf. Renal</p>
-                      <p>{data.filiacion.enfCardiopatia ? '☑' : '☐'} Cardiopatía</p>
-                      <p>Otros: {data.filiacion.enfEspecifique || 'No'}</p>
-                    </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                      <p><strong>¿Anemia/Micronutrientes?:</strong> {data.filiacion.anemia ? 'Sí' : 'No'}</p>
-                      <p><strong>Cirugías Previas:</strong> {data.filiacion.cirugiasPrevias ? 'Sí' : 'No'}</p>
-                      <p><strong>TCA:</strong> {data.filiacion.tca ? 'Sí' : 'No'}</p>
-                      <p><strong>Alergias:</strong> {data.filiacion.alergiasAlimentarias ? data.filiacion.alergiasCuales : 'No'}</p>
-                    </div>
-                  </div>
-                  <div>
-                    <p style={{ fontWeight: 'bold', borderBottom: '1px solid #e5e7eb', marginBottom: '8px', fontSize: '11px', color: '#374151' }}>ANTECEDENTES FAMILIARES:</p>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px', fontSize: '11px' }}>
-                      <p>{data.filiacion.famDM2 ? '☑' : '☐'} DM2 {data.filiacion.famDM2Parent && `(${data.filiacion.famDM2Parent})`}</p>
-                      <p>{data.filiacion.famHTA ? '☑' : '☐'} HTA {data.filiacion.famHTAParent && `(${data.filiacion.famHTAParent})`}</p>
-                      <p>{data.filiacion.famObesidad ? '☑' : '☐'} Obesidad {data.filiacion.famObesidadParent && `(${data.filiacion.famObesidadParent})`}</p>
-                      <p>{data.filiacion.famPreeclampsia ? '☑' : '☐'} Preeclampsia {data.filiacion.famPreeclampsiaParent && `(${data.filiacion.famPreeclampsiaParent})`}</p>
-                      <p>{data.filiacion.famPrematuridad ? '☑' : '☐'} Prematuridad {data.filiacion.famPrematuridadParent && `(${data.filiacion.famPrematuridadParent})`}</p>
-                      <p>{data.filiacion.famDTN ? '☑' : '☐'} Defectos Tubo Neural {data.filiacion.famDTNParent && `(${data.filiacion.famDTNParent})`}</p>
-                    </div>
+              {/* FILIACIÓN */}
+              {data.filiacion && (
+                <div style={{ marginBottom: '24px' }}>
+                  <h3 style={{ fontSize: '14px', fontWeight: 'bold', padding: '8px', marginBottom: '16px', textTransform: 'uppercase', borderLeft: '4px solid #0d9488', backgroundColor: '#f0fdfa' }}>
+                    📋 I. DATOS DE IDENTIFICACIÓN
+                  </h3>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', fontSize: '12px' }}>
+                    <p><strong>Nombre:</strong> {data.filiacion.nombre}</p>
+                    <p><strong>Edad:</strong> {data.filiacion.edad} años</p>
+                    <p><strong>EG:</strong> {data.filiacion.semanasGestacion} semanas</p>
+                    <p><strong>Ocupación:</strong> {data.filiacion.ocupacion}</p>
                   </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            {/* 3. ANTECEDENTES GINECO-OBSTÉTRICOS */}
-            {data.filiacion && (
-              <div style={{ marginBottom: '32px' }}>
-                <h3 style={{ fontSize: '14px', fontWeight: 'bold', padding: '8px', marginBottom: '16px', textTransform: 'uppercase', letterSpacing: '0.05em', borderLeft: '4px solid #0d9488', backgroundColor: '#f0fdfa' }}>
-                  🤰 3. ANTECEDENTES GINECO-OBSTÉTRICOS
-                </h3>
-                <div style={{ fontSize: '13px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-around', backgroundColor: '#f0fdfa', padding: '8px', borderRadius: '4px', fontWeight: 'bold', color: '#0f766e', border: '1px solid #ccfbf1', marginBottom: '16px' }}>
-                    <span>Gestas: {data.filiacion.gestas || 0}</span>
-                    <span>Partos: {data.filiacion.paras || 0}</span>
-                    <span>Cesáreas: {data.filiacion.cesareas || 0}</span>
-                    <span>Abortos: {data.filiacion.abortos || 0}</span>
+              {/* ANTROPOMETRÍA */}
+              {data.antropometria && (
+                <div style={{ marginBottom: '24px' }}>
+                  <h3 style={{ fontSize: '14px', fontWeight: 'bold', padding: '8px', marginBottom: '16px', textTransform: 'uppercase', borderLeft: '4px solid #0d9488', backgroundColor: '#f0fdfa' }}>
+                    📏 II. ANTROPOMETRÍA
+                  </h3>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
+                    {[
+                      { l: 'Talla', v: data.antropometria.height, u: 'cm' },
+                      { l: 'Peso Preg.', v: data.antropometria.preWeight, u: 'kg' },
+                      { l: 'Peso Actual', v: data.antropometria.currentWeight, u: 'kg' },
+                      { l: 'IMC Preg.', v: (parseFloat(data.antropometria.preWeight) / Math.pow(parseFloat(data.antropometria.height)/100, 2)).toFixed(1), u: '' }
+                    ].map((item, i) => (
+                      <div key={i} style={{ textAlign: 'center', padding: '8px', background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '4px' }}>
+                        <p style={{ fontSize: '8px', color: '#6b7280', margin: 0 }}>{item.l}</p>
+                        <p style={{ fontSize: '14px', fontWeight: 'bold', margin: '4px 0' }}>{item.v} <small style={{ fontSize: '8px' }}>{item.u}</small></p>
+                      </div>
+                    ))}
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                    <p><strong>FUM:</strong> {data.filiacion.fum || '---'}</p>
-                    <p><strong>EG:</strong> {data.filiacion.semanasGestacion || '---'} semanas</p>
-                    <p><strong>FPP:</strong> {data.filiacion.fppEco || '---'}</p>
-                    <p><strong>Semanas:</strong> {data.filiacion.semanasGestacion || '---'} sem</p>
-                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            {/* 4. ESTILO DE VIDA */}
-            {data.filiacion && (
-              <div style={{ marginBottom: '32px' }}>
-                <h3 style={{ fontSize: '14px', fontWeight: 'bold', padding: '8px', marginBottom: '16px', textTransform: 'uppercase', letterSpacing: '0.05em', borderLeft: '4px solid #0d9488', backgroundColor: '#f0fdfa' }}>
-                  🏃 4. ESTILO DE VIDA
-                </h3>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', fontSize: '13px' }}>
-                  <p><strong>Actividad Física:</strong> {data.filiacion.actFisicaRealiza ? `${data.filiacion.actFisicaTipo || ''} (${data.filiacion.actFisicaFrec || 0} v/sem)` : 'Sedentaria'}</p>
-                  <p><strong>Sustancias:</strong> Tabaco: {data.filiacion.consTabaco ? 'Sí' : 'No'} | Alcohol: {data.filiacion.consAlcohol ? 'Sí' : 'No'}</p>
-                  <p><strong>Descanso:</strong> {data.filiacion.suenoHoras || 0}h {data.filiacion.suenoInsomnio ? '(Con insomnio)' : ''}</p>
-                  <p><strong>Estrés:</strong> {data.filiacion.estres || 'Normal'}</p>
-                  <p style={{ gridColumn: 'span 2' }}><strong>Seguridad Alimentaria:</strong> {data.filiacion.seguridadAlimentaria || '---'}</p>
-                </div>
-              </div>
-            )}
+              {/* ALIMENTARIA */}
+              {data.alimentaria && (
+                <div style={{ marginBottom: '24px' }}>
+                  <h3 style={{ fontSize: '14px', fontWeight: 'bold', padding: '8px', marginBottom: '16px', textTransform: 'uppercase', borderLeft: '4px solid #0d9488', backgroundColor: '#f0fdfa' }}>
+                    🍎 III. ANÁLISIS NUTRICIONAL (R24H)
+                  </h3>
+                  {(() => {
+                    const items = (data.alimentaria.comidas || []).flatMap(c => c.alimentos || []);
+                    if (items.length === 0) return <p style={{ fontSize: '11px' }}>No hay datos de consumo.</p>;
 
-            <div style={{ pageBreakBefore: 'always' }} />
+                    const sum = (field) => items.reduce((acc, i) => acc + (Number(i[field]) || 0), 0);
+                    const rda = { kcal: 2200, proteinas: 71, hco: 175, lipidos: 28, vit_a: 770, b9: 600, vit_c: 105, calcio: 950, hierro: 16 };
 
-            {/* II. VALORACIÓN ANTROPOMÉTRICA */}
-            {data.antropometria && (
-              <div style={{ marginBottom: '32px' }}>
-                <h3 style={{ fontSize: '14px', fontWeight: 'bold', padding: '8px', marginBottom: '16px', textTransform: 'uppercase', letterSpacing: '0.05em', borderLeft: '4px solid #0d9488', backgroundColor: '#f0fdfa' }}>
-                  📏 II. VALORACIÓN ANTROPOMÉTRICA
-                </h3>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', marginBottom: '16px' }}>
-                   {[
-                     { l: 'Talla', v: data.antropometria.height, u: 'cm' },
-                     { l: 'Peso Preg.', v: data.antropometria.preWeight, u: 'kg' },
-                     { l: 'Peso Actual', v: data.antropometria.currentWeight, u: 'kg' },
-                     { l: 'IMC Preg.', v: (parseFloat(data.antropometria.preWeight) / Math.pow(parseFloat(data.antropometria.height)/100, 2)).toFixed(1), u: '' }
-                   ].map((item, i) => (
-                     <div key={i} style={{ textAlign: 'center', padding: '10px', background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '4px' }}>
-                       <p style={{ fontSize: '9px', color: '#6b7280', margin: 0, textTransform: 'uppercase' }}>{item.l}</p>
-                       <p style={{ fontSize: '16px', fontWeight: 'bold', margin: '4px 0' }}>{item.v} <small style={{ fontSize: '10px' }}>{item.u}</small></p>
-                     </div>
-                   ))}
-                </div>
-                <div style={{ fontSize: '12px', padding: '12px', background: '#f0fdfa', border: '1px solid #ccfbf1', borderRadius: '4px' }}>
-                   <p><strong>Ganancia de Peso Estimada:</strong> {data.antropometria?.weightGain || '---'} kg</p>
-                   <p><strong>Meta de Ganancia Recomendada:</strong> {data.antropometria?.gainTarget || '---'}</p>
-                </div>
-              </div>
-            )}
-
-            {/* III. VALORACIÓN CLÍNICA */}
-            {data.clinica && (
-              <div style={{ marginBottom: '32px' }}>
-                <h3 style={{ fontSize: '14px', fontWeight: 'bold', padding: '8px', marginBottom: '16px', textTransform: 'uppercase', letterSpacing: '0.05em', borderLeft: '4px solid #0d9488', backgroundColor: '#f0fdfa' }}>
-                  🩺 III. VALORACIÓN CLÍNICA
-                </h3>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', fontSize: '12px', marginBottom: '16px' }}>
-                  <p><strong>PA:</strong> {data.clinica.vitales?.paSistolica}/{data.clinica.vitales?.paDiastolica} mmHg ({data.clinica.vitales?.clasificacionPA})</p>
-                  <p><strong>Hidratación:</strong> {data.clinica.hidratacion?.vasosAgua} vasos/día ({data.clinica.hidratacion?.evaluacionGlobal})</p>
-                </div>
-
-                {renderTable(
-                  ['NUTRIENTE', 'SIGNO CLÍNICO', 'PRESENTE', 'SEV'],
-                  (Array.isArray(data.clinica.deficiencias) ? data.clinica.deficiencias : []).map(d => [d?.nutriente || '-', d?.signo || '-', d?.presente ? 'SÍ' : 'NO', d?.severidad || '-']),
-                  '⚠️ SIGNOS DE DEFICIENCIAS NUTRICIONALES'
-                )}
-
-                <div style={{ fontSize: '11px', background: '#f8fafc', padding: '12px', borderRadius: '4px', border: '1px solid #e2e8f0' }}>
-                   <p style={{ fontWeight: 'bold', marginBottom: '8px' }}>RESUMEN EXAMEN FÍSICO:</p>
-                   <p><strong>Cabello:</strong> {data.clinica.examenFisico?.pielFaneras?.cabello} | <strong>Piel:</strong> {data.clinica.examenFisico?.pielFaneras?.coloracion}</p>
-                   <p><strong>Lengua:</strong> {data.clinica.examenFisico?.cavidadOral?.lengua} | <strong>Encías:</strong> {data.clinica.examenFisico?.cavidadOral?.encias}</p>
-                   <p><strong>Uñas:</strong> {data.clinica.examenFisico?.unas?.aspecto} | <strong>Edema:</strong> {data.clinica.examenFisico?.pielFaneras?.edema}</p>
-                   <p><strong>Altura Uterina:</strong> {data.clinica.examenFisico?.abdomen?.alturaUterina} cm | <strong>Mov. Fetales:</strong> {data.clinica.examenFisico?.abdomen?.movimientos}</p>
-                </div>
-                
-                {data.clinica.resumen?.hallazgos && (
-                  <div style={{ marginTop: '12px', fontSize: '12px', padding: '12px', background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: '4px' }}>
-                    <p><strong>Análisis Integrado:</strong> {data.clinica.resumen?.hallazgos}</p>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* IV. HISTORIA ALIMENTARIA COMPLETA */}
-            {data.alimentaria && (
-              <div style={{ marginBottom: '32px' }}>
-                <h3 style={{ fontSize: '14px', fontWeight: 'bold', padding: '8px', marginBottom: '16px', textTransform: 'uppercase', letterSpacing: '0.05em', borderLeft: '4px solid #0d9488', backgroundColor: '#f0fdfa' }}>
-                  🍎 IV. HISTORIA ALIMENTARIA
-                </h3>
-                
-                {/* R24H TABLE */}
-                {data.alimentaria.recordatorio5p ? (
-                  <>
-                    {renderTable(
-                      ['HORA / OCASIÓN', 'ALIMENTO', 'CANTIDAD', 'PREPARACIÓN Y DETALLES', 'LUGAR'],
-                      (Array.isArray(data.alimentaria.recordatorio5p?.items) ? data.alimentaria.recordatorio5p.items : []).map(item => [
-                        `${item?.hora || '---'} \n(${item?.ocasion || '---'})`,
-                        item?.nombre || '---',
-                        item?.cantidad || '---',
-                        `${item?.preparacion || ''} ${item?.detalles ? `(${item.detalles})` : ''}`,
-                        item?.lugar || '---'
-                      ]),
-                      '📋 RECORDATORIO DE 24 HORAS (MÉTODO 5 PASOS)'
-                    )}
-                  </>
-                ) : (
-                  <>
-                    {renderTable(
-                      ['TIEMPO', 'HORA', 'LUGAR', 'DESCRIPCIÓN DE ALIMENTOS Y PREPARACIÓN'],
-                      Object.entries(data.alimentaria.recordatorio || {}).filter(([k]) => k !== 'extras').map(([k, v]) => [
-                        k.charAt(0).toUpperCase() + k.slice(1).replace(/([A-Z])/g, ' $1'),
-                        v?.hora || '---',
-                        v?.lugar || '---',
-                        v?.descripcion || '---'
-                      ]),
-                      '📋 RECORDATORIO DE 24 HORAS (R24H)'
-                    )}
-                    {data.alimentaria.recordatorio?.extras && <p style={{ fontSize: '10px', marginTop: '-15px', marginBottom: '20px' }}><strong>Extras:</strong> {data.alimentaria.recordatorio?.extras}</p>}
-                  </>
-                )}
-
-                {/* FRECUENCIA TABLE */}
-                {renderTable(
-                  ['GRUPO DE ALIMENTO', 'FRECUENCIA'],
-                  Object.entries(data.alimentaria.frecuencia || {}).map(([k, v]) => [k, v]),
-                  '📊 FRECUENCIA DE CONSUMO'
-                )}
-
-                {/* RACIONES TABLE */}
-                {renderTable(
-                  ['GRUPO', 'CONSUME (RAC)', 'RECOMENDADO'],
-                  Object.entries(data.alimentaria.raciones || {}).map(([k, v]) => {
-                    const rec = {
-                      'Cereales': '7-9', 'Verduras': '3-4', 'Frutas': '3-4', 'Lácteos': '3-4',
-                      'Carnes': '2-3', 'Leguminosas': '1-2', 'Grasas': '4-6', 'Agua': '8-10'
+                    const card = (key, label, val, unit, target) => {
+                      const info = infoClinica[key];
+                      const pct = target ? Math.min(Math.round((val / target) * 100), 100) : 0;
+                      const color = (val / target) * 100 > 110 ? '#ef4444' : (val / target) * 100 >= 90 ? '#22c55e' : (val / target) * 100 >= 50 ? '#f59e0b' : '#3b82f6';
+                      
+                      return (
+                        <div 
+                          key={key}
+                          onClick={() => info && setSelectedNutrient(info)}
+                          style={{ padding: '8px', background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '6px', cursor: info ? 'pointer' : 'default', transition: 'all 0.2s' }}
+                          onMouseOver={(e) => info && (e.currentTarget.style.backgroundColor = '#f0f9ff')}
+                          onMouseOut={(e) => info && (e.currentTarget.style.backgroundColor = '#f9fafb')}
+                        >
+                          <div style={{ fontSize: '8px', color: '#6b7280', display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
+                            <span>{label}</span>
+                            {info && <span style={{ color: '#3b82f6', fontWeight: 'bold' }}>ⓘ</span>}
+                          </div>
+                          <div style={{ fontSize: '13px', fontWeight: 'bold' }}>{val.toFixed(1)} <span style={{ fontSize: '9px', fontWeight: 'normal' }}>{unit}</span></div>
+                          {target && (
+                            <div style={{ marginTop: '4px', height: '4px', background: '#e5e7eb', borderRadius: '2px', overflow: 'hidden' }}>
+                              <div style={{ height: '100%', width: `${pct}%`, background: color }} />
+                            </div>
+                          )}
+                        </div>
+                      );
                     };
-                    return [k, v, rec[k] || '---'];
-                  }),
-                  '⚖️ CUMPLIMIENTO DE RACIONES'
-                )}
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', fontSize: '11px', marginTop: '10px' }}>
-                  <div style={{ padding: '8px', background: '#fdf2f8', border: '1px solid #fce7f3', borderRadius: '4px' }}>
-                    <p><strong>Gustos:</strong> {data.alimentaria.preferencias?.gustan || '---'}</p>
-                    <p><strong>Rechazos:</strong> {data.alimentaria.preferencias?.noGustan || '---'}</p>
-                  </div>
-                  <div style={{ padding: '8px', background: '#fdf2f8', border: '1px solid #fce7f3', borderRadius: '4px' }}>
-                    <p><strong>Alergias:</strong> {data.alimentaria.preferencias?.alergias || '---'}</p>
-                    <p><strong>Intolerancias:</strong> {data.alimentaria.preferencias?.intolerancias || '---'}</p>
+                    return (
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '8px' }}>
+                        {card('kcal', 'Energía', sum('kcal'), 'kcal', rda.kcal)}
+                        {card('proteinas', 'Proteínas', sum('proteinas'), 'g', rda.proteinas)}
+                        {card('b9', 'Ác. Fólico', sum('b9'), 'µg', rda.b9)}
+                        {card('calcio', 'Calcio', sum('calcio'), 'mg', rda.calcio)}
+                        {card('hierro', 'Hierro', sum('hierro'), 'mg', rda.hierro)}
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
+
+              {data.diagnostico && (
+                <div style={{ marginBottom: '24px' }}>
+                  <h3 style={{ fontSize: '14px', fontWeight: 'bold', padding: '8px', marginBottom: '16px', textTransform: 'uppercase', borderLeft: '4px solid #0d9488', backgroundColor: '#f0fdfa' }}>
+                    🎯 IV. DIAGNÓSTICO NUTRICIONAL
+                  </h3>
+                  <div style={{ padding: '12px', border: '1px solid #bae6fd', backgroundColor: '#f0f9ff', borderRadius: '6px', fontSize: '13px', fontStyle: 'italic', color: '#0369a1' }}>
+                    "Paciente presenta {data.diagnostico.problema} relacionado con {data.diagnostico.etiologia} evidenciado por {data.diagnostico.signos || 'valoración clínica'}."
                   </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            {/* V. DIAGNÓSTICO NUTRICIONAL PES */}
-            {data.diagnostico && (
-              <div style={{ marginBottom: '32px' }}>
-                <h3 style={{ fontSize: '14px', fontWeight: 'bold', padding: '8px', marginBottom: '16px', textTransform: 'uppercase', letterSpacing: '0.05em', borderLeft: '4px solid #0d9488', backgroundColor: '#f0fdfa' }}>
-                  🎯 V. DIAGNÓSTICO NUTRICIONAL
-                </h3>
-                <div style={{ padding: '16px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '13px' }}>
-                  <p style={{ margin: '0 0 12px 0' }}><strong>Problema (P):</strong> {data.diagnostico.problema || '---'}</p>
-                  <p style={{ margin: '0 0 12px 0' }}><strong>Etiología (E):</strong> {data.diagnostico.etiologia || '---'}</p>
-                  <p style={{ margin: '0 0 16px 0' }}><strong>Signos/Síntomas (S):</strong> {data.diagnostico.signos || '---'}</p>
-                  
-                  <div style={{ padding: '12px', background: '#e0f2fe', border: '1px solid #bae6fd', borderRadius: '4px', fontSize: '14px', fontStyle: 'italic', fontWeight: 'bold', color: '#0369a1' }}>
-                    "Paciente presenta {data.diagnostico.problema || '[-]'} relacionado con {data.diagnostico.etiologia || '[-]'} evidenciado por {data.diagnostico.signos || '[-]'}."
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* FIRMA */}
-            <div style={{ marginTop: '100px', display: 'flex', justifyContent: 'center' }}>
-              <div style={{ textAlign: 'center', width: '250px' }}>
-                <div style={{ borderTop: '1px solid #000', marginBottom: '8px' }}></div>
-                <p style={{ fontSize: '11px', fontWeight: 'bold', textTransform: 'uppercase', margin: 0 }}>Firma y Sello del Profesional</p>
-                <p style={{ fontSize: '10px', color: '#6b7280', margin: 0 }}>Licenciatura en Nutrición</p>
+              <div style={{ marginTop: 'auto', paddingTop: '100px', textAlign: 'center' }}>
+                <div style={{ borderTop: '1px solid #000', width: '250px', margin: '0 auto 8px' }}></div>
+                <p style={{ fontSize: '11px', fontWeight: 'bold', margin: 0 }}>Firma y Sello del Profesional</p>
               </div>
             </div>
           </div>
         </>
+      )}
+
+      {selectedNutrient && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="bg-[#1a1c1e] border border-white/10 w-full max-w-2xl rounded-3xl overflow-hidden relative shadow-2xl">
+            <button 
+              onClick={() => setSelectedNutrient(null)}
+              className="absolute top-6 right-6 p-2 bg-white/5 hover:bg-white/10 rounded-full text-gray-400 hover:text-white z-10"
+            >
+              <X size={20} />
+            </button>
+            <div className="bg-gradient-to-br from-blue-600/20 to-purple-600/20 p-8 pt-10 border-b border-white/5">
+              <div className="flex items-center gap-4 mb-2">
+                <span className="p-3 bg-blue-500/20 rounded-2xl text-blue-400"><Activity size={32} /></span>
+                <div>
+                  <h3 className="text-3xl font-bold text-white tracking-tight">{selectedNutrient.nombre}</h3>
+                  <p className="text-blue-400 font-medium tracking-wide">Guía de Deficiencias Nutricionales</p>
+                </div>
+              </div>
+            </div>
+            <div className="p-8 space-y-8 max-h-[70vh] overflow-y-auto">
+              <section>
+                <h4 className="text-blue-400 text-xs font-bold uppercase tracking-widest mb-4 flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 bg-blue-400 rounded-full" /> Manifestación Principal
+                </h4>
+                <p className="text-xl text-gray-100 font-medium leading-relaxed bg-white/5 p-4 rounded-2xl border border-white/5">
+                  {selectedNutrient.resumen}
+                </p>
+              </section>
+
+              <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <h4 className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-3">Fuentes Alimentarias</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedNutrient.fuentes?.split(', ').map((f, i) => (
+                      <span key={i} className="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-gray-300 text-sm font-medium">{f}</span>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <h4 className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-3">Riesgo en Embarazo</h4>
+                  <div className="bg-amber-500/10 border border-amber-500/20 p-4 rounded-2xl">
+                    <p className="text-sm text-amber-200 leading-relaxed">{selectedNutrient.riesgo}</p>
+                  </div>
+                </div>
+              </section>
+            </div>
+            <div className="p-6 border-t border-white/5 bg-black/40 text-center">
+              <p className="text-[10px] text-gray-500 italic">
+                Esta información es orientativa y para fines de apoyo clínico.
+              </p>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
